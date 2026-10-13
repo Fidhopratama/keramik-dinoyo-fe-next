@@ -1,5 +1,7 @@
 'use client'
+
 import { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 
 import {
   ArrowRight,
@@ -15,16 +17,13 @@ import StatCard from '../components/StatCard'
 import api, { getShops } from '../services/api'
 
 const API_URL =
-  process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ||
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ||
   'http://127.0.0.1:5050'
 
 const shopImages = {
-  'Keramik Brawijaya':
-    '/images/keramik-brawijaya.jpg',
-  'Keramik Dinoyo Makmur':
-    '/images/keramik-dinoyo-makmur.jpg',
-  'Dinoyo Ceramic House':
-    '/images/dinoyo-ceramic-house.jpg',
+  'Keramik Brawijaya': '/images/keramik-brawijaya.jpg',
+  'Keramik Dinoyo Makmur': '/images/keramik-dinoyo-makmur.jpg',
+  'Dinoyo Ceramic House': '/images/dinoyo-ceramic-house.jpg',
 }
 
 function getShopImageUrl(image) {
@@ -106,27 +105,23 @@ function Dashboard() {
   const periodRef = useRef(null)
 
   useEffect(() => {
+    let cancelled = false
+
     const fetchDashboard = async () => {
       try {
         setLoading(true)
         setError('')
 
-        const [
-          dashboardResponse,
-          shopsResponse,
-        ] = await Promise.all([
+        const [dashboardResponse, shopsResponse] = await Promise.all([
           api.get('/dashboard'),
           getShops(),
         ])
 
-        const dashboardData =
-          dashboardResponse.data?.data || {}
+        if (cancelled) return
 
-        const dashboardRecentShops =
-          dashboardData.recent_shops
-
-        const shopsData =
-          shopsResponse.data?.data || []
+        const dashboardData = dashboardResponse.data?.data || {}
+        const dashboardRecentShops = dashboardData.recent_shops
+        const shopsData = shopsResponse.data?.data || []
 
         setDashboard(dashboardData)
 
@@ -134,43 +129,40 @@ function Dashboard() {
           Array.isArray(dashboardRecentShops) &&
           dashboardRecentShops.length > 0
         ) {
-          setRecentShops(
-            dashboardRecentShops.slice(0, 5),
-          )
-        } else if (
-          Array.isArray(shopsData)
-        ) {
-          setRecentShops(
-            shopsData.slice(0, 5),
-          )
+          setRecentShops(dashboardRecentShops.slice(0, 5))
+        } else if (Array.isArray(shopsData)) {
+          setRecentShops(shopsData.slice(0, 5))
         } else {
           setRecentShops([])
         }
       } catch (err) {
-        console.error(
-          'Dashboard error:',
-          err,
-        )
+        if (cancelled) return
+
+        console.error('Dashboard error:', err)
 
         setError(
           err.response?.data?.message ||
             'Data dashboard gagal dimuat.',
         )
       } finally {
-        setLoading(false)
+        if (!cancelled) {
+          setLoading(false)
+        }
       }
     }
 
     fetchDashboard()
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   useEffect(() => {
     const handleClick = (event) => {
       if (
         periodRef.current &&
-        !periodRef.current.contains(
-          event.target,
-        )
+        !periodRef.current.contains(event.target)
       ) {
         setPeriodOpen(false)
       }
@@ -182,26 +174,12 @@ function Dashboard() {
       }
     }
 
-    document.addEventListener(
-      'mousedown',
-      handleClick,
-    )
-
-    document.addEventListener(
-      'keydown',
-      handleKey,
-    )
+    document.addEventListener('mousedown', handleClick)
+    document.addEventListener('keydown', handleKey)
 
     return () => {
-      document.removeEventListener(
-        'mousedown',
-        handleClick,
-      )
-
-      document.removeEventListener(
-        'keydown',
-        handleKey,
-      )
+      document.removeEventListener('mousedown', handleClick)
+      document.removeEventListener('keydown', handleKey)
     }
   }, [])
 
@@ -225,17 +203,12 @@ function Dashboard() {
     )
   }
 
-  const statistics =
-    dashboard?.statistics || {}
-
-  const chartBars =
-    monthlyActivity.slice(-period)
+  const statistics = dashboard?.statistics || {}
+  const chartBars = monthlyActivity.slice(-period)
 
   const periodLabel =
-    periodOptions.find(
-      (option) =>
-        option.value === period,
-    )?.label || '6 Bulan'
+    periodOptions.find((option) => option.value === period)?.label ||
+    '6 Bulan'
 
   return (
     <AdminLayout>
@@ -243,28 +216,17 @@ function Dashboard() {
         <div className="dashboard-header">
           <div>
             <h1>Dashboard</h1>
-
-            <p>
-              Ringkasan aktivitas Kampung Keramik
-              Dinoyo.
-            </p>
+            <p>Ringkasan aktivitas Kampung Keramik Dinoyo.</p>
           </div>
 
           <div className="dashboard-date">
-            <CalendarDays
-              size={18}
-              aria-hidden="true"
-            />
-
+            <CalendarDays size={18} aria-hidden="true" />
             <span>
-              {new Date().toLocaleDateString(
-                'id-ID',
-                {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
-                },
-              )}
+              {new Date().toLocaleDateString('id-ID', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+              })}
             </span>
           </div>
         </div>
@@ -316,63 +278,39 @@ function Dashboard() {
             <div className="dashboard-card-header">
               <div>
                 <h2>Aktivitas</h2>
-
                 <p>
-                  Aktivitas kampung keramik
-                  berdasarkan periode.
+                  Aktivitas kampung keramik berdasarkan periode.
                 </p>
               </div>
 
-              <div
-                className="dashboard-period"
-                ref={periodRef}
-              >
+              <div className="dashboard-period" ref={periodRef}>
                 <button
                   type="button"
                   className="dashboard-period-button"
-                  onClick={() =>
-                    setPeriodOpen(
-                      (value) => !value,
-                    )
-                  }
+                  onClick={() => setPeriodOpen((value) => !value)}
                   aria-expanded={periodOpen}
                 >
-                  <span>
-                    {periodLabel}
-                  </span>
-
-                  <ChevronDown
-                    size={16}
-                    aria-hidden="true"
-                  />
+                  <span>{periodLabel}</span>
+                  <ChevronDown size={16} aria-hidden="true" />
                 </button>
 
                 {periodOpen && (
                   <div className="dashboard-period-menu">
-                    {periodOptions.map(
-                      (option) => (
-                        <button
-                          key={option.value}
-                          type="button"
-                          className={
-                            option.value ===
-                            period
-                              ? 'active'
-                              : ''
-                          }
-                          onClick={() => {
-                            setPeriod(
-                              option.value,
-                            )
-                            setPeriodOpen(
-                              false,
-                            )
-                          }}
-                        >
-                          {option.label}
-                        </button>
-                      ),
-                    )}
+                    {periodOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={
+                          option.value === period ? 'active' : ''
+                        }
+                        onClick={() => {
+                          setPeriod(option.value)
+                          setPeriodOpen(false)
+                        }}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>
@@ -396,29 +334,28 @@ function Dashboard() {
                   <span />
                 </div>
 
-                <div className="dashboard-bars">
-                  {chartBars.map(
-                    (item) => (
-                      <div
-                        className="dashboard-bar-item"
-                        key={item.month}
-                      >
-                        <div className="dashboard-bar-wrapper">
-                          <div
-                            className="dashboard-bar"
-                            style={{
-                              height: `${item.height}%`,
-                            }}
-                            title={`${item.month}: ${item.height}`}
-                          />
-                        </div>
-
-                        <span>
-                          {item.month}
-                        </span>
+                <div
+                  className="dashboard-bars"
+                  style={{
+                    gridTemplateColumns: `repeat(${chartBars.length}, minmax(0, 1fr))`,
+                  }}
+                >
+                  {chartBars.map((item) => (
+                    <div
+                      className="dashboard-bar-item"
+                      key={item.month}
+                    >
+                      <div className="dashboard-bar-wrapper">
+                        <div
+                          className="dashboard-bar"
+                          style={{ height: `${item.height}%` }}
+                          title={`${item.month}: ${item.height}`}
+                        />
                       </div>
-                    ),
-                  )}
+
+                      <span>{item.month}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -428,18 +365,11 @@ function Dashboard() {
             <div className="dashboard-card-header">
               <div>
                 <h2>Verifikasi AI</h2>
-
-                <p>
-                  Ringkasan hasil verifikasi
-                  produk.
-                </p>
+                <p>Ringkasan hasil verifikasi produk.</p>
               </div>
 
               <div className="dashboard-ai-icon">
-                <Sparkles
-                  size={20}
-                  aria-hidden="true"
-                />
+                <Sparkles size={20} aria-hidden="true" />
               </div>
             </div>
 
@@ -456,27 +386,15 @@ function Dashboard() {
 
               <div className="dashboard-ai-status">
                 <span className="dashboard-ai-status-icon">
-                  <Check
-                    size={14}
-                    aria-hidden="true"
-                  />
+                  <Check size={14} aria-hidden="true" />
                 </span>
-
-                <span>
-                  Sistem verifikasi AI aktif
-                </span>
+                <span>Sistem verifikasi AI aktif</span>
               </div>
             </div>
 
             <div className="dashboard-ai-footer">
-              <span>
-                Analisis kualitas produk
-              </span>
-
-              <ArrowRight
-                size={18}
-                aria-hidden="true"
-              />
+              <span>Analisis kualitas produk</span>
+              <ArrowRight size={18} aria-hidden="true" />
             </div>
           </div>
         </div>
@@ -485,44 +403,26 @@ function Dashboard() {
           <div className="dashboard-card-header">
             <div>
               <h2>Toko Terbaru</h2>
-
               <p>
-                Daftar toko yang terdaftar di
-                Kampung Keramik Dinoyo.
+                Daftar toko yang terdaftar di Kampung Keramik Dinoyo.
               </p>
             </div>
 
-            <a
-              href="/shops"
-              className="dashboard-view-all"
-            >
+            <Link href="/toko" className="dashboard-view-all">
               Lihat semua
-
-              <ArrowRight
-                size={17}
-                aria-hidden="true"
-              />
-            </a>
+              <ArrowRight size={17} aria-hidden="true" />
+            </Link>
           </div>
 
           <div className="dashboard-shops-list">
             {recentShops.length === 0 ? (
               <div className="dashboard-empty">
-                <Store
-                  size={32}
-                  aria-hidden="true"
-                />
-
-                <p>
-                  Belum ada data toko.
-                </p>
+                <Store size={32} aria-hidden="true" />
+                <p>Belum ada data toko.</p>
               </div>
             ) : (
               recentShops.map((shop) => {
-                const imageUrl =
-                  getShopImageUrl(
-                    shop.image,
-                  )
+                const imageUrl = getShopImageUrl(shop.image)
 
                 return (
                   <div
@@ -530,70 +430,42 @@ function Dashboard() {
                     key={shop.id}
                   >
                     <div className="dashboard-shop-image">
-                      {imageUrl ? (
+                      {imageUrl && (
                         <img
                           src={imageUrl}
-                          alt={
-                            shop.name ||
-                            'Toko keramik'
-                          }
-                          onError={(
-                            event,
-                          ) => {
-                            event.currentTarget.style.display =
-                              'none'
+                          alt={shop.name || 'Toko keramik'}
+                          onError={(event) => {
+                            event.currentTarget.style.display = 'none'
 
                             const fallback =
-                              event.currentTarget
-                                .nextElementSibling
+                              event.currentTarget.nextElementSibling
 
-                            if (
-                              fallback
-                            ) {
-                              fallback.style.display =
-                                'flex'
+                            if (fallback) {
+                              fallback.style.display = 'flex'
                             }
                           }}
                         />
-                      ) : null}
+                      )}
 
                       <div
                         className="dashboard-shop-image-fallback"
                         style={{
-                          display:
-                            imageUrl
-                              ? 'none'
-                              : 'flex',
+                          display: imageUrl ? 'none' : 'flex',
                         }}
                       >
-                        {shopImages[
-                          shop.name
-                        ] ? (
+                        {shopImages[shop.name] ? (
                           <img
-                            src={
-                              shopImages[
-                                shop.name
-                              ]
-                            }
-                            alt={
-                              shop.name
-                            }
+                            src={shopImages[shop.name]}
+                            alt={shop.name || 'Toko keramik'}
                           />
                         ) : (
-                          <Store
-                            size={28}
-                            aria-hidden="true"
-                          />
+                          <Store size={28} aria-hidden="true" />
                         )}
                       </div>
                     </div>
 
                     <div className="dashboard-shop-info">
-                      <h3>
-                        {shop.name ||
-                          'Nama toko'}
-                      </h3>
-
+                      <h3>{shop.name || 'Nama toko'}</h3>
                       <p>
                         {shop.address ||
                           shop.description ||
@@ -662,19 +534,14 @@ function Dashboard() {
 
         .dashboard-stats {
           display: grid;
-          grid-template-columns: repeat(
-            4,
-            minmax(0, 1fr)
-          );
+          grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: 18px;
           margin-bottom: 20px;
         }
 
         .dashboard-main-grid {
           display: grid;
-          grid-template-columns:
-            minmax(0, 2fr)
-            minmax(300px, 1fr);
+          grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
           gap: 20px;
           margin-bottom: 20px;
         }
@@ -739,9 +606,7 @@ function Dashboard() {
           border: 1px solid #e5e7eb;
           border-radius: 9px;
           background: #fff;
-          box-shadow:
-            0 10px 25px
-              rgba(0, 0, 0, 0.08);
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
         }
 
         .dashboard-period-menu button {
@@ -803,10 +668,6 @@ function Dashboard() {
           position: absolute;
           inset: 0;
           display: grid;
-          grid-template-columns: repeat(
-            ${chartBars.length},
-            minmax(0, 1fr)
-          );
           align-items: end;
           gap: 12px;
         }
@@ -921,9 +782,11 @@ function Dashboard() {
           font-size: 13px;
           font-weight: 600;
           text-decoration: none;
+          transition: color 0.2s ease;
         }
 
         .dashboard-view-all:hover {
+          color: #9a572b;
           text-decoration: underline;
         }
 
@@ -1038,10 +901,7 @@ function Dashboard() {
 
         @media (max-width: 1100px) {
           .dashboard-stats {
-            grid-template-columns: repeat(
-              2,
-              minmax(0, 1fr)
-            );
+            grid-template-columns: repeat(2, minmax(0, 1fr));
           }
 
           .dashboard-main-grid {
