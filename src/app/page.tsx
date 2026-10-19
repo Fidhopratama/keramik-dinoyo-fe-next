@@ -8,6 +8,7 @@ import {
   CalendarDays,
   Check,
   ChevronDown,
+  Shapes,
   Sparkles,
   Store,
 } from 'lucide-react'
@@ -259,7 +260,7 @@ function Dashboard() {
               statistics.workshops ??
               0
             }
-            icon={CalendarDays}
+            icon={Shapes}
           />
 
           <StatCard

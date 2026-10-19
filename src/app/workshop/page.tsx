@@ -1,6 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import {
+  CalendarDays,
+  Clock3,
+  MapPin,
+  UserRound,
+  UsersRound,
+} from 'lucide-react'
 import AdminLayout from '../../components/AdminLayout'
 import {
   createWorkshop,
@@ -696,7 +703,9 @@ function Workshop() {
           .workshop-page .workshop-info-icon {
             width: 22px !important;
             flex: 0 0 22px !important;
-            text-align: center !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
             color: #c87842 !important;
           }
 
@@ -1245,7 +1254,11 @@ function Workshop() {
                       <div className="workshop-info">
                         <div className="workshop-info-row">
                           <span className="workshop-info-icon">
-                            ▣
+                            <CalendarDays
+                              size={15}
+                              strokeWidth={1.8}
+                              aria-hidden="true"
+                            />
                           </span>
 
                           <strong>
@@ -1257,7 +1270,11 @@ function Workshop() {
 
                         <div className="workshop-info-row">
                           <span className="workshop-info-icon">
-                            ◷
+                            <Clock3
+                              size={15}
+                              strokeWidth={1.8}
+                              aria-hidden="true"
+                            />
                           </span>
 
                           <strong>
@@ -1273,7 +1290,11 @@ function Workshop() {
 
                         <div className="workshop-info-row">
                           <span className="workshop-info-icon">
-                            ♙
+                            <UserRound
+                              size={15}
+                              strokeWidth={1.8}
+                              aria-hidden="true"
+                            />
                           </span>
 
                           <strong>
@@ -1284,7 +1305,11 @@ function Workshop() {
 
                         <div className="workshop-info-row">
                           <span className="workshop-info-icon">
-                            ⌂
+                            <MapPin
+                              size={15}
+                              strokeWidth={1.8}
+                              aria-hidden="true"
+                            />
                           </span>
 
                           <strong>
@@ -1295,7 +1320,11 @@ function Workshop() {
 
                         <div className="workshop-info-row">
                           <span className="workshop-info-icon">
-                            ♧
+                            <UsersRound
+                              size={15}
+                              strokeWidth={1.8}
+                              aria-hidden="true"
+                            />
                           </span>
 
                           <strong>

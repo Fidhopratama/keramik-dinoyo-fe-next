@@ -4,7 +4,7 @@ import {
   LayoutDashboard,
   LogOut,
   Package,
-  Palette,
+  Shapes,
   Settings,
   Sparkles,
   Store,
@@ -30,7 +30,7 @@ const menuItems = [
   {
     label: 'Workshop',
     path: '/workshop',
-    icon: Palette,
+    icon: Shapes,
   },
   {
     label: 'Verifikasi AI',
