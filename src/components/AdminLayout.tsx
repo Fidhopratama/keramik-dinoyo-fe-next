@@ -11,14 +11,14 @@ const titleMap = {
   '/workshop': 'Workshop',
   '/verifikasi-ai': 'Verifikasi AI',
   '/pengaturan': 'Pengaturan',
+  '/profil': 'Profil Admin',
 }
 
 function AdminLayout({ children }) {
   const router = useRouter()
   const pathname = usePathname()
 
-  const title =
-    titleMap[pathname] || 'Dashboard'
+  const title = titleMap[pathname] || 'Dashboard'
 
   const handleMenuChange = (menu) => {
     const routes = {
@@ -28,10 +28,8 @@ function AdminLayout({ children }) {
       Workshop: '/workshop',
       'Verifikasi AI': '/verifikasi-ai',
       Pengaturan: '/pengaturan',
-      'Profil Admin':
-        '/pengaturan?section=profil',
-      'Ganti Password':
-        '/pengaturan?section=keamanan',
+      'Profil Admin': '/profil',
+      'Ganti Password': '/pengaturan?section=keamanan',
     }
 
     const route = routes[menu]
@@ -43,9 +41,7 @@ function AdminLayout({ children }) {
 
   const handleLogout = () => {
     try {
-      localStorage.removeItem(
-        'keramik_dinoyo_token',
-      )
+      localStorage.removeItem('keramik_dinoyo_token')
     } catch {}
 
     router.push('/login')
@@ -53,9 +49,7 @@ function AdminLayout({ children }) {
 
   return (
     <div className="app">
-      <Sidebar
-        onLogout={handleLogout}
-      />
+      <Sidebar onLogout={handleLogout} />
 
       <main className="main-content">
         <Navbar
@@ -64,9 +58,7 @@ function AdminLayout({ children }) {
           onMenuChange={handleMenuChange}
         />
 
-        <section className="content">
-          {children}
-        </section>
+        <section className="content">{children}</section>
       </main>
     </div>
   )
