@@ -1,6 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import type {
+  ChangeEvent,
+  FormEvent,
+} from 'react'
+
 import AdminLayout from '../../components/AdminLayout'
 
 import {
@@ -11,64 +16,89 @@ import {
   updateProduct,
 } from '../../services/api'
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ||
-  'http://127.0.0.1:5050'
+import ProductCard from './components/ProductCard'
+import ProductModal from './components/ProductModal'
+import ProductStyles from './components/ProductStyles'
+import ProductToolbar from './components/ProductToolbar'
 
-function getProductImage(product) {
-  if (!product) {
-    return ''
+import {
+  initialForm,
+  type Product,
+  type ProductFormData,
+  type Shop,
+} from './components/productData'
+
+type ApiError = {
+  response?: {
+    data?: {
+      message?: string
+      errors?: unknown
+    }
   }
-
-  if (!product.image) {
-    return ''
-  }
-
-  if (
-    product.image.startsWith('http://') ||
-    product.image.startsWith('https://')
-  ) {
-    return product.image
-  }
-
-  if (product.image.startsWith('/uploads/')) {
-    return `${API_URL}${product.image}`
-  }
-
-  if (product.image.startsWith('uploads/')) {
-    return `${API_URL}/${product.image}`
-  }
-
-  if (product.image.startsWith('/images/')) {
-    return product.image
-  }
-
-  if (product.image.startsWith('/')) {
-    return `${API_URL}${product.image}`
-  }
-
-  if (product.image.startsWith('products/')) {
-    return `${API_URL}/uploads/${product.image}`
-  }
-
-  return `${API_URL}/uploads/products/${product.image}`
 }
 
-const initialForm = {
-  shop_id: '',
-  category_id: '',
-  name: '',
-  description: '',
-  price: '',
-  stock: '',
-  status: 'active',
-  imageFile: null,
-  imagePreview: '',
+function getErrorMessage(error: unknown, fallback: string): string {
+  const apiError = error as ApiError
+  const responseData = apiError.response?.data
+
+  if (responseData?.errors) {
+    const errors = responseData.errors
+
+    if (Array.isArray(errors)) {
+      return errors.map(String).join('\n')
+    }
+
+    if (typeof errors === 'object' && errors !== null) {
+      return Object.values(errors)
+        .flatMap((value) => Array.isArray(value) ? value : [value])
+        .map(String)
+        .join('\n')
+    }
+  }
+
+  return responseData?.message || fallback
+}
+
+function getProductList(response: any): Product[] {
+  const data = response?.data?.data
+
+  if (Array.isArray(data)) {
+    return data
+  }
+
+  if (Array.isArray(data?.data)) {
+    return data.data
+  }
+
+  if (Array.isArray(response?.data?.products)) {
+    return response.data.products
+  }
+
+  return []
+}
+
+function getShopList(response: any): Shop[] {
+  const data = response?.data?.data
+
+  if (Array.isArray(data)) {
+    return data
+  }
+
+  if (Array.isArray(data?.data)) {
+    return data.data
+  }
+
+  if (Array.isArray(response?.data?.shops)) {
+    return response.data.shops
+  }
+
+  return []
 }
 
 export default function ProdukPage() {
-  const [products, setProducts] = useState([])
-  const [shops, setShops] = useState([])
+  const [products, setProducts] = useState<Product[]>([])
+  const [shops, setShops] = useState<Shop[]>([])
+
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
@@ -76,103 +106,67 @@ export default function ProdukPage() {
   const [formError, setFormError] = useState('')
 
   const [showForm, setShowForm] = useState(false)
-  const [editingProduct, setEditingProduct] =
-    useState(null)
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<ProductFormData>({
     ...initialForm,
   })
 
-  const [deletingId, setDeletingId] =
-    useState(null)
-
+  const [deletingId, setDeletingId] = useState<number | string | null>(null)
   const [search, setSearch] = useState('')
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async (searchTerm = '') => {
     try {
       setLoading(true)
       setError('')
 
-      const [
-        productsResponse,
-        shopsResponse,
-      ] = await Promise.all([
+      const [productsResponse, shopsResponse] = await Promise.all([
         getProducts({
-          search: search || undefined,
+          search: searchTerm.trim() || undefined,
         }),
         getShops(),
       ])
 
-      setProducts(
-        productsResponse.data?.data?.data ||
-          productsResponse.data?.data ||
-          [],
-      )
-
-      setShops(
-        shopsResponse.data?.data || [],
-      )
+      setProducts(getProductList(productsResponse))
+      setShops(getShopList(shopsResponse))
     } catch (err) {
       console.error(err)
-
-      setError(
-        err.response?.data?.message ||
-          'Gagal mengambil data produk.',
-      )
+      setError(getErrorMessage(err, 'Gagal mengambil data produk.'))
     } finally {
       setLoading(false)
     }
-  }
-
-  useEffect(() => {
-    fetchData()
   }, [])
 
-  const handleSearch = async () => {
-    await fetchData()
+  useEffect(() => {
+    void fetchData()
+  }, [fetchData])
+
+  const handleSearch = () => {
+    void fetchData(search)
   }
 
   const openAddForm = () => {
     setEditingProduct(null)
-
-    setForm({
-      ...initialForm,
-    })
-
+    setForm({ ...initialForm })
     setFormError('')
     setShowForm(true)
   }
 
-  const openEditForm = (product) => {
+  const openEditForm = (product: Product) => {
     setEditingProduct(product)
 
     setForm({
-      shop_id:
-        product.shop_id ||
-        product.shop?.id ||
-        '',
-
-      category_id:
-        product.category_id ||
-        product.category?.id ||
-        '',
-
+      shop_id: String(product.shop_id ?? product.shop?.id ?? ''),
+      category_id: String(
+        product.category_id ?? product.category?.id ?? '',
+      ),
       name: product.name || '',
-
-      description:
-        product.description || '',
-
-      price: product.price ?? '',
-
-      stock: product.stock ?? '',
-
-      status:
-        product.status || 'active',
-
+      description: product.description || '',
+      price: product.price == null ? '' : String(product.price),
+      stock: product.stock == null ? '' : String(product.stock),
+      status: product.status === 'inactive' ? 'inactive' : 'active',
       imageFile: null,
-
-      imagePreview:
-        getProductImage(product),
+      imagePreview: getProductImageUrl(product),
     })
 
     setFormError('')
@@ -180,25 +174,18 @@ export default function ProdukPage() {
   }
 
   const closeForm = () => {
-    if (saving) {
-      return
-    }
+    if (saving) return
 
     setShowForm(false)
     setEditingProduct(null)
-
-    setForm({
-      ...initialForm,
-    })
-
+    setForm({ ...initialForm })
     setFormError('')
   }
 
-  const handleChange = (event) => {
-    const {
-      name,
-      value,
-    } = event.target
+  const handleChange = (
+    event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
+  ) => {
+    const { name, value } = event.target
 
     setForm((current) => ({
       ...current,
@@ -206,95 +193,55 @@ export default function ProdukPage() {
     }))
   }
 
-  const handleImageChange = (event) => {
-    const file =
-      event.target.files?.[0]
+  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
 
-    if (!file) {
+    if (!file) return
+
+    if (file.size > 2 * 1024 * 1024) {
+      setFormError('Ukuran foto maksimal 2 MB.')
+      event.target.value = ''
       return
     }
 
-    if (
-      file.size >
-      2 * 1024 * 1024
-    ) {
-      setFormError(
-        'Ukuran foto maksimal 2 MB.',
-      )
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
 
+    if (!allowedTypes.includes(file.type)) {
+      setFormError('Format foto harus JPG, JPEG, atau WEBP.')
       event.target.value = ''
-
-      return
-    }
-
-    const allowedTypes = [
-      'image/jpeg',
-      'image/png',
-      'image/webp',
-    ]
-
-    if (
-      !allowedTypes.includes(file.type)
-    ) {
-      setFormError(
-        'Format foto harus JPG, JPEG, atau WEBP.',
-      )
-
-      event.target.value = ''
-
       return
     }
 
     setForm((current) => ({
       ...current,
       imageFile: file,
-      imagePreview:
-        URL.createObjectURL(file),
+      imagePreview: URL.createObjectURL(file),
     }))
 
     setFormError('')
   }
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-
     setFormError('')
 
     if (!form.shop_id) {
-      setFormError(
-        'Toko wajib dipilih.',
-      )
-
+      setFormError('Toko wajib dipilih.')
       return
     }
 
     if (!form.name.trim()) {
-      setFormError(
-        'Nama produk wajib diisi.',
-      )
-
+      setFormError('Nama produk wajib diisi.')
       return
     }
 
-    if (
-      form.price === '' ||
-      Number(form.price) < 0
-    ) {
-      setFormError(
-        'Harga produk tidak valid.',
-      )
-
+    if (form.price.trim() === '' || !Number.isFinite(Number(form.price)) || Number(form.price) < 0) {
+      setFormError('Harga produk tidak valid.')
       return
     }
 
-    if (
-      form.stock === '' ||
-      Number(form.stock) < 0
-    ) {
-      setFormError(
-        'Stok produk tidak valid.',
-      )
-
+    if (form.stock.trim() === '' || !Number.isFinite(Number(form.stock)) || Number(form.stock) < 0) {
+      setFormError('Stok produk tidak valid.')
       return
     }
 
@@ -303,25 +250,14 @@ export default function ProdukPage() {
 
       const formData = new FormData()
 
-      formData.append(
-        'shop_id',
-        form.shop_id,
-      )
+      formData.append('shop_id', form.shop_id)
 
       if (form.category_id) {
-        formData.append(
-          'category_id',
-          form.category_id,
-        )
+        formData.append('category_id', form.category_id)
       }
 
-      formData.append(
-        'name',
-        form.name,
-      )
+      formData.append('name', form.name.trim())
 
-      // Saat tambah produk, buat slug unik.
-      // Saat edit, pertahankan slug produk lama.
       const baseSlug = form.name
         .toLowerCase()
         .trim()
@@ -332,120 +268,51 @@ export default function ProdukPage() {
         ? editingProduct.slug
         : `${baseSlug}-${Date.now()}`
 
-      formData.append(
-        'slug',
-        productSlug,
-      )
-
-      formData.append(
-        'description',
-        form.description,
-      )
-
-      formData.append(
-        'price',
-        form.price,
-      )
-
-      formData.append(
-        'stock',
-        form.stock,
-      )
-
-      formData.append(
-        'status',
-        form.status,
-      )
+      formData.append('slug', productSlug)
+      formData.append('description', form.description)
+      formData.append('price', form.price)
+      formData.append('stock', form.stock)
+      formData.append('status', form.status)
 
       if (form.imageFile) {
-        formData.append(
-          'image',
-          form.imageFile,
-        )
+        formData.append('image', form.imageFile)
       }
 
       if (editingProduct) {
-        await updateProduct(
-          editingProduct.id,
-          formData,
-        )
+        await updateProduct(editingProduct.id, formData)
       } else {
         await createProduct(formData)
       }
 
       setShowForm(false)
       setEditingProduct(null)
+      setForm({ ...initialForm })
 
-      setForm({
-        ...initialForm,
-      })
-
-      await fetchData()
+      await fetchData(search)
     } catch (err) {
       console.error(err)
-
-      const responseData =
-        err.response?.data
-
-      let message =
-        responseData?.message ||
-        'Gagal menyimpan produk.'
-
-      if (
-        responseData?.errors
-      ) {
-        const errors =
-          responseData.errors
-
-        if (
-          Array.isArray(errors)
-        ) {
-          message =
-            errors.join('\n')
-        } else if (
-          typeof errors ===
-          'object'
-        ) {
-          message =
-            Object.values(errors)
-              .flat()
-              .join('\n')
-        }
-      }
-
-      setFormError(message)
+      setFormError(getErrorMessage(err, 'Gagal menyimpan produk.'))
     } finally {
       setSaving(false)
     }
   }
 
-  const handleDelete = async (product) => {
-    const confirmed =
-      window.confirm(
-        `Yakin ingin menghapus produk "${product.name}"?`,
-      )
+  const handleDelete = async (product: Product) => {
+    const confirmed = window.confirm(
+      `Yakin ingin menghapus produk "${product.name}"?`,
+    )
 
-    if (!confirmed) {
-      return
-    }
+    if (!confirmed) return
 
     try {
       setDeletingId(product.id)
       setError('')
 
       await deleteProduct(product.id)
-
-      await fetchData()
+      await fetchData(search)
     } catch (err) {
       console.error(err)
-
-      const responseData =
-        err.response?.data
-
-      setError(
-        responseData?.message ||
-          'Produk tidak bisa dihapus.',
-      )
+      setError(getErrorMessage(err, 'Produk tidak bisa dihapus.'))
     } finally {
       setDeletingId(null)
     }
@@ -454,21 +321,17 @@ export default function ProdukPage() {
   if (loading) {
     return (
       <AdminLayout>
+        <ProductStyles />
+
         <div className="page-container">
           <div className="page-header">
             <div>
               <h1>Produk</h1>
-
-              <p>
-                Kelola produk keramik dari
-                seluruh toko.
-              </p>
+              <p>Kelola produk keramik dari seluruh toko.</p>
             </div>
           </div>
 
-          <div className="loading-box">
-            Memuat data produk...
-          </div>
+          <div className="loading-box">Memuat data produk...</div>
         </div>
       </AdminLayout>
     )
@@ -476,432 +339,17 @@ export default function ProdukPage() {
 
   return (
     <AdminLayout>
+      <ProductStyles />
+
       <div className="page-container">
-        <style jsx>{`
-          .page-container {
-            width: 100%;
-          }
-
-          .page-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 20px;
-            margin-bottom: 22px;
-          }
-
-          .page-header h1 {
-            margin: 0;
-            color: #2f2119;
-            font-size: 28px;
-            font-weight: 700;
-          }
-
-          .page-header p {
-            margin: 7px 0 0;
-            color: #766458;
-            font-size: 14px;
-          }
-
-          .primary-button {
-            border: none;
-            background: #c87842;
-            color: #fff;
-            padding: 11px 18px;
-            border-radius: 9px;
-            font-size: 14px;
-            font-weight: 600;
-            font-family: inherit;
-            cursor: pointer;
-          }
-
-          .primary-button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-          }
-
-          .product-toolbar {
-            display: flex;
-            gap: 10px;
-            width: 100%;
-            max-width: 560px;
-            margin-bottom: 24px;
-          }
-
-          .product-toolbar input {
-            flex: 1;
-            height: 50px;
-            box-sizing: border-box;
-            border: 1px solid #d9d1cb;
-            border-radius: 9px;
-            padding: 0 14px;
-            font-family: inherit;
-            font-size: 15px;
-            outline: none;
-          }
-
-          .secondary-button {
-            height: 40px;
-            padding: 0 16px;
-            background: #fff;
-            color: #333;
-            border: 1px solid #aaa;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 500;
-            font-family: inherit;
-            cursor: pointer;
-          }
-
-          .product-toolbar .secondary-button {
-            height: 50px;
-          }
-
-          .error-box {
-            margin-bottom: 20px;
-            padding: 12px 15px;
-            border-radius: 9px;
-            background: #fff1f1;
-            border: 1px solid #efc2c2;
-            color: #c0392b;
-            font-size: 14px;
-            white-space: pre-line;
-          }
-
-          .loading-box,
-          .empty-box {
-            background: #fff;
-            border: 1px solid #eee2d8;
-            border-radius: 14px;
-            padding: 60px 20px;
-            text-align: center;
-            color: #8a7769;
-          }
-
-          .empty-box h3 {
-            margin: 0 0 8px;
-            color: #3d2b1f;
-          }
-
-          .empty-box p {
-            margin: 0 0 20px;
-          }
-
-          .product-grid {
-            display: grid;
-            grid-template-columns:
-              repeat(3, minmax(0, 1fr));
-            gap: 24px;
-          }
-
-          .product-card {
-            background: #fff;
-            border: 1px solid #eee2d8;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow:
-              0 4px 14px
-              rgba(74, 52, 39, 0.06);
-          }
-
-          .product-image {
-            width: 100%;
-            height: 225px;
-            background: #f5f5f7;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          }
-
-          .product-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-          }
-
-          .product-image-placeholder {
-            color: #aaa;
-            font-size: 14px;
-          }
-
-          .product-content {
-            padding: 20px;
-          }
-
-          .product-title-row {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 12px;
-          }
-
-          .product-title-row h3 {
-            margin: 0;
-            color: #171717;
-            font-size: 19px;
-            font-weight: 700;
-          }
-
-          .status-badge {
-            flex-shrink: 0;
-            padding: 7px 11px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-          }
-
-          .status-badge.active {
-            background: #dcf8e7;
-            color: #16834a;
-          }
-
-          .status-badge.inactive {
-            background: #fbecec;
-            color: #c0392b;
-          }
-
-          .product-shop {
-            margin: 10px 0 0;
-            color: #5f7185;
-            font-size: 14px;
-          }
-
-          .product-description {
-            margin: 13px 0 0;
-            color: #687789;
-            font-size: 14px;
-            line-height: 1.6;
-            min-height: 45px;
-          }
-
-          .product-meta {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-top: 18px;
-          }
-
-          .product-meta > div {
-            background: #f8f9fa;
-            border-radius: 9px;
-            padding: 13px 12px;
-          }
-
-          .product-meta span {
-            display: block;
-            color: #718096;
-            font-size: 13px;
-            margin-bottom: 7px;
-          }
-
-          .product-meta strong {
-            display: block;
-            color: #171717;
-            font-size: 14px;
-          }
-
-          .product-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 22px;
-          }
-
-          .edit-product-button,
-          .delete-product-button {
-            flex: 1;
-            height: 40px;
-            border-radius: 9px;
-            font-size: 14px;
-            font-weight: 600;
-            font-family: inherit;
-            cursor: pointer;
-          }
-
-          .edit-product-button {
-            background: #fff7ed;
-            color: #c87842;
-            border: 1px solid #e8c7aa;
-          }
-
-          .delete-product-button {
-            background: #fff5f5;
-            color: #d9534f;
-            border: 1px solid #edc4c4;
-          }
-
-          .delete-product-button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-          }
-
-          .modal-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: 9999;
-            background: rgba(35, 25, 19, 0.48);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-          }
-
-          .modal-card {
-            width: 100%;
-            max-width: 650px;
-            max-height: 90vh;
-            overflow-y: auto;
-            background: #fff;
-            border-radius: 16px;
-            padding: 25px;
-          }
-
-          .modal-header {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 20px;
-            margin-bottom: 22px;
-          }
-
-          .modal-header h2 {
-            margin: 0;
-            color: #3d2b1f;
-            font-size: 21px;
-          }
-
-          .modal-header p {
-            margin: 5px 0 0;
-            color: #8a7769;
-            font-size: 13px;
-          }
-
-          .modal-close {
-            width: 34px;
-            height: 34px;
-            border: none;
-            border-radius: 50%;
-            background: #f5eee8;
-            color: #6e5c50;
-            font-size: 20px;
-            cursor: pointer;
-          }
-
-          .form-group {
-            margin-bottom: 16px;
-          }
-
-          .form-group label {
-            display: block;
-            margin-bottom: 7px;
-            color: #4d3b2f;
-            font-size: 13px;
-            font-weight: 600;
-          }
-
-          .form-group input,
-          .form-group select,
-          .form-group textarea {
-            width: 100%;
-            box-sizing: border-box;
-            border: 1px solid #ded2c9;
-            border-radius: 8px;
-            padding: 10px 12px;
-            font-family: inherit;
-            font-size: 14px;
-            outline: none;
-            background: #fff;
-          }
-
-          .form-group input,
-          .form-group select {
-            height: 42px;
-          }
-
-          .form-group textarea {
-            min-height: 90px;
-            resize: vertical;
-          }
-
-          .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 14px;
-          }
-
-          .file-help {
-            display: block;
-            margin-top: 6px;
-            color: #8a7769;
-            font-size: 12px;
-          }
-
-          .image-preview {
-            width: 100%;
-            height: 190px;
-            margin-top: 10px;
-            border-radius: 10px;
-            overflow: hidden;
-            background: #f5eee8;
-          }
-
-          .image-preview img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-          }
-
-          .form-error {
-            margin-bottom: 15px;
-            padding: 10px 12px;
-            background: #fff1f1;
-            border: 1px solid #efc2c2;
-            color: #c0392b;
-            border-radius: 8px;
-            font-size: 13px;
-            white-space: pre-line;
-          }
-
-          .modal-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-top: 24px;
-          }
-
-          @media (max-width: 1100px) {
-            .product-grid {
-              grid-template-columns:
-                repeat(2, minmax(0, 1fr));
-            }
-          }
-
-          @media (max-width: 700px) {
-            .page-header {
-              flex-direction: column;
-            }
-
-            .product-grid {
-              grid-template-columns: 1fr;
-            }
-
-            .form-row {
-              grid-template-columns: 1fr;
-            }
-          }
-        `}</style>
-
         <div className="page-header">
           <div>
             <h1>Produk</h1>
-
-            <p>
-              Kelola produk keramik dari seluruh toko.
-            </p>
+            <p>Kelola produk keramik dari seluruh toko.</p>
           </div>
 
           <button
+            type="button"
             className="primary-button"
             onClick={openAddForm}
           >
@@ -909,384 +357,109 @@ export default function ProdukPage() {
           </button>
         </div>
 
-        <div className="product-toolbar">
-          <input
-            type="text"
-            value={search}
-            onChange={(event) =>
-              setSearch(event.target.value)
-            }
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                handleSearch()
-              }
-            }}
-            placeholder="Cari nama produk..."
-          />
+        <ProductToolbar
+          search={search}
+          onSearchChange={setSearch}
+          onSearch={handleSearch}
+        />
 
-          <button
-            className="secondary-button"
-            onClick={handleSearch}
-          >
-            Cari
-          </button>
-        </div>
-
-        {error && (
-          <div className="error-box">
-            {error}
-          </div>
-        )}
+        {error && <div className="error-box">{error}</div>}
 
         {products.length === 0 ? (
           <div className="empty-box">
-            <h3>Belum ada produk</h3>
+            <h3>{search ? 'Produk tidak ditemukan' : 'Belum ada produk'}</h3>
 
             <p>
-              Tambahkan produk pertama.
+              {search
+                ? 'Coba gunakan kata kunci pencarian lain.'
+                : 'Tambahkan produk pertama.'}
             </p>
 
-            <button
-              className="primary-button"
-              onClick={openAddForm}
-            >
-              + Tambah Produk
-            </button>
+            {search ? (
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => {
+                  setSearch('')
+                  void fetchData('')
+                }}
+              >
+                Reset Pencarian
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="primary-button"
+                onClick={openAddForm}
+              >
+                + Tambah Produk
+              </button>
+            )}
           </div>
         ) : (
           <div className="product-grid">
-            {products.map((product) => {
-              const imageUrl =
-                getProductImage(product)
-
-              return (
-                <div
-                  className="product-card"
-                  key={product.id}
-                >
-                  <div className="product-image">
-                    {imageUrl ? (
-                      <img
-                        src={imageUrl}
-                        alt={product.name}
-                        onError={(event) => {
-                          event.currentTarget.style.display =
-                            'none'
-                        }}
-                      />
-                    ) : (
-                      <div className="product-image-placeholder">
-                        Tidak ada foto
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="product-content">
-                    <div className="product-title-row">
-                      <h3>
-                        {product.name}
-                      </h3>
-
-                      <span
-                        className={
-                          product.status ===
-                          'active'
-                            ? 'status-badge active'
-                            : 'status-badge inactive'
-                        }
-                      >
-                        {product.status ===
-                        'active'
-                          ? 'Aktif'
-                          : 'Nonaktif'}
-                      </span>
-                    </div>
-
-                    <p className="product-shop">
-                      {product.shop?.name ||
-                        'Toko tidak diketahui'}
-                    </p>
-
-                    <p className="product-description">
-                      {product.description ||
-                        'Belum ada deskripsi.'}
-                    </p>
-
-                    <div className="product-meta">
-                      <div>
-                        <span>Harga</span>
-
-                        <strong>
-                          Rp{' '}
-                          {Number(
-                            product.price || 0,
-                          ).toLocaleString(
-                            'id-ID',
-                          )}
-                        </strong>
-                      </div>
-
-                      <div>
-                        <span>Stok</span>
-
-                        <strong>
-                          {product.stock ?? 0}
-                        </strong>
-                      </div>
-                    </div>
-
-                    <div className="product-actions">
-                      <button
-                        type="button"
-                        className="edit-product-button"
-                        onClick={() =>
-                          openEditForm(
-                            product,
-                          )
-                        }
-                      >
-                        Edit
-                      </button>
-
-                      <button
-                        type="button"
-                        className="delete-product-button"
-                        disabled={
-                          deletingId ===
-                          product.id
-                        }
-                        onClick={() =>
-                          handleDelete(
-                            product,
-                          )
-                        }
-                      >
-                        {deletingId ===
-                        product.id
-                          ? 'Menghapus...'
-                          : 'Hapus'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
+            {products.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                deleting={deletingId === product.id}
+                onEdit={openEditForm}
+                onDelete={handleDelete}
+              />
+            ))}
           </div>
         )}
 
         {showForm && (
-          <div className="modal-overlay">
-            <div className="modal-card">
-              <div className="modal-header">
-                <div>
-                  <h2>
-                    {editingProduct
-                      ? 'Edit Produk'
-                      : 'Tambah Produk'}
-                  </h2>
-
-                  <p>
-                    Isi informasi produk di bawah.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  className="modal-close"
-                  onClick={closeForm}
-                  disabled={saving}
-                >
-                  ×
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmit}>
-                <div className="form-group">
-                  <label htmlFor="shop_id">
-                    Toko
-                  </label>
-
-                  <select
-                    id="shop_id"
-                    name="shop_id"
-                    value={form.shop_id}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="">
-                      Pilih toko
-                    </option>
-
-                    {shops.map((shop) => (
-                      <option
-                        key={shop.id}
-                        value={shop.id}
-                      >
-                        {shop.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="category_id">
-                    Category ID
-                  </label>
-
-                  <input
-                    id="category_id"
-                    name="category_id"
-                    type="number"
-                    min="1"
-                    value={form.category_id}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="name">
-                    Nama Produk
-                  </label>
-
-                  <input
-                    id="name"
-                    name="name"
-                    type="text"
-                    value={form.name}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="image">
-                    Foto Produk
-                  </label>
-
-                  <input
-                    id="image"
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={handleImageChange}
-                  />
-
-                  <small className="file-help">
-                    JPG, JPEG, atau WEBP. Maksimal
-                    2 MB.
-                  </small>
-
-                  {form.imagePreview && (
-                    <div className="image-preview">
-                      <img
-                        src={form.imagePreview}
-                        alt="Preview produk"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="description">
-                    Deskripsi
-                  </label>
-
-                  <textarea
-                    id="description"
-                    name="description"
-                    value={form.description}
-                    onChange={handleChange}
-                    rows="4"
-                  />
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="price">
-                      Harga
-                    </label>
-
-                    <input
-                      id="price"
-                      name="price"
-                      type="number"
-                      min="0"
-                      value={form.price}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="stock">
-                      Stok
-                    </label>
-
-                    <input
-                      id="stock"
-                      name="stock"
-                      type="number"
-                      min="0"
-                      value={form.stock}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="status">
-                    Status
-                  </label>
-
-                  <select
-                    id="status"
-                    name="status"
-                    value={form.status}
-                    onChange={handleChange}
-                  >
-                    <option value="active">
-                      Aktif
-                    </option>
-
-                    <option value="inactive">
-                      Nonaktif
-                    </option>
-                  </select>
-                </div>
-
-                {formError && (
-                  <div className="form-error">
-                    {formError}
-                  </div>
-                )}
-
-                <div className="modal-actions">
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={closeForm}
-                    disabled={saving}
-                  >
-                    Batal
-                  </button>
-
-                  <button
-                    type="submit"
-                    className="primary-button"
-                    disabled={saving}
-                  >
-                    {saving
-                      ? 'Menyimpan...'
-                      : editingProduct
-                        ? 'Simpan Perubahan'
-                        : 'Tambah Produk'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
+          <ProductModal
+            form={form}
+            shops={shops}
+            editingProduct={editingProduct}
+            saving={saving}
+            formError={formError}
+            onChange={handleChange}
+            onImageChange={handleImageChange}
+            onSubmit={handleSubmit}
+            onClose={closeForm}
+          />
         )}
       </div>
     </AdminLayout>
   )
+}
+
+function getProductImageUrl(product: Product): string {
+  if (!product.image) return ''
+
+  const image = product.image.trim()
+
+  if (image.startsWith('http://') || image.startsWith('https://')) {
+    return image
+  }
+
+  if (image.startsWith('/images/')) {
+    return image
+  }
+
+  const apiUrl =
+    process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ||
+    'http://127.0.0.1:5050'
+
+  if (image.startsWith('/uploads/')) {
+    return `${apiUrl}${image}`
+  }
+
+  if (image.startsWith('uploads/')) {
+    return `${apiUrl}/${image}`
+  }
+
+  if (image.startsWith('/')) {
+    return `${apiUrl}${image}`
+  }
+
+  if (image.startsWith('products/')) {
+    return `${apiUrl}/uploads/${image}`
+  }
+
+  return `${apiUrl}/uploads/products/${image}`
 }
