@@ -1,10 +1,11 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import Sidebar from './Sidebar'
 import Navbar from './Navbar'
 
-const titleMap = {
+const titleMap: Record<string, string> = {
   '/': 'Dashboard',
   '/toko': 'Toko',
   '/produk': 'Produk',
@@ -12,26 +13,35 @@ const titleMap = {
   '/verifikasi-ai': 'Verifikasi AI',
   '/pengaturan': 'Pengaturan',
   '/profil': 'Profil Admin',
+  '/ganti-password': 'Ganti Password',
 }
 
-function AdminLayout({ children }) {
+const routes: Record<string, string> = {
+  Dashboard: '/',
+  Toko: '/toko',
+  Produk: '/produk',
+  Workshop: '/workshop',
+  'Verifikasi AI': '/verifikasi-ai',
+  Pengaturan: '/pengaturan',
+  'Profil Admin': '/profil',
+  'Ganti Password': '/ganti-password',
+}
+
+function getTitle(pathname: string) {
+  if (titleMap[pathname]) return titleMap[pathname]
+
+  // Halaman turunan, mis. /toko/tambah atau /produk/1/edit -> judul menu induk
+  const root = `/${pathname.split('/')[1] || ''}`
+  return titleMap[root] || 'Dashboard'
+}
+
+function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter()
-  const pathname = usePathname()
+  const pathname = usePathname() || '/'
 
-  const title = titleMap[pathname] || 'Dashboard'
+  const title = getTitle(pathname)
 
-  const handleMenuChange = (menu) => {
-    const routes = {
-      Dashboard: '/',
-      Toko: '/toko',
-      Produk: '/produk',
-      Workshop: '/workshop',
-      'Verifikasi AI': '/verifikasi-ai',
-      Pengaturan: '/pengaturan',
-      'Profil Admin': '/profil',
-      'Ganti Password': '/pengaturan?section=keamanan',
-    }
-
+  const handleMenuChange = (menu: string) => {
     const route = routes[menu]
 
     if (route) {

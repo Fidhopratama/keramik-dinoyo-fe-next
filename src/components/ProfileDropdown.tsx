@@ -9,9 +9,7 @@ function getSavedName() {
   }
 
   try {
-    const saved = localStorage.getItem(
-      'dinoyo_admin_settings',
-    )
+    const saved = localStorage.getItem('dinoyo_admin_settings')
 
     if (!saved) return ''
 
@@ -23,14 +21,9 @@ function getSavedName() {
   }
 }
 
-function ProfileDropdown({
-  onProfile,
-  onChangePassword,
-  onLogout,
-}) {
+function ProfileDropdown({ onProfile, onChangePassword, onLogout }) {
   const [open, setOpen] = useState(false)
-  const [savedName, setSavedName] =
-    useState('')
+  const [savedName, setSavedName] = useState('')
 
   useEffect(() => {
     setSavedName(getSavedName())
@@ -39,16 +32,10 @@ function ProfileDropdown({
       setSavedName(getSavedName())
     }
 
-    window.addEventListener(
-      'dinoyo-settings-updated',
-      handleSettingsUpdate,
-    )
+    window.addEventListener('dinoyo-settings-updated', handleSettingsUpdate)
 
     return () => {
-      window.removeEventListener(
-        'dinoyo-settings-updated',
-        handleSettingsUpdate,
-      )
+      window.removeEventListener('dinoyo-settings-updated', handleSettingsUpdate)
     }
   }, [])
 
@@ -56,11 +43,7 @@ function ProfileDropdown({
     if (!open) return
 
     const handleOutside = (event) => {
-      if (
-        !event.target.closest(
-          '.pd-wrapper',
-        )
-      ) {
+      if (!event.target.closest('.pd-wrapper')) {
         setOpen(false)
       }
     }
@@ -71,35 +54,18 @@ function ProfileDropdown({
       }
     }
 
-    document.addEventListener(
-      'mousedown',
-      handleOutside,
-    )
-
-    document.addEventListener(
-      'keydown',
-      handleEscape,
-    )
+    document.addEventListener('mousedown', handleOutside)
+    document.addEventListener('keydown', handleEscape)
 
     return () => {
-      document.removeEventListener(
-        'mousedown',
-        handleOutside,
-      )
-
-      document.removeEventListener(
-        'keydown',
-        handleEscape,
-      )
+      document.removeEventListener('mousedown', handleOutside)
+      document.removeEventListener('keydown', handleEscape)
     }
   }, [open])
 
-  const name =
-    savedName || 'Admin'
+  const name = savedName || 'Admin'
 
-  const initial =
-    name.trim().charAt(0).toUpperCase() ||
-    'A'
+  const initial = name.trim().charAt(0).toUpperCase() || 'A'
 
   const handleProfile = () => {
     setOpen(false)
@@ -125,9 +91,7 @@ function ProfileDropdown({
         aria-expanded={open}
         aria-haspopup="menu"
       >
-        <div className="profile-avatar">
-          {initial}
-        </div>
+        <div className="profile-avatar">{initial}</div>
 
         <div className="profile-info">
           <strong>{name}</strong>
@@ -135,28 +99,34 @@ function ProfileDropdown({
         </div>
 
         <span className="profile-arrow">
-          <ChevronDown
-            size={13}
-            aria-hidden="true"
-          />
+          <ChevronDown size={13} aria-hidden="true" />
         </span>
       </button>
 
       {open && (
-        <div
-          className="admin-dropdown"
-          role="menu"
-        >
-          <div className="dropdown-user">
-            <div className="profile-avatar">
-              {initial}
-            </div>
+        <div className="admin-dropdown" role="menu">
+          <button
+            type="button"
+            role="menuitem"
+            className="dropdown-user dropdown-user-button"
+            onClick={handleProfile}
+            style={{
+              width: '100%',
+              border: 0,
+              textAlign: 'left',
+              cursor: 'pointer',
+              borderRadius: 10,
+              font: 'inherit',
+              color: 'inherit',
+            }}
+          >
+            <span className="profile-avatar">{initial}</span>
 
-            <div className="dropdown-user-info">
+            <span className="dropdown-user-info" style={{ display: 'block' }}>
               <strong>{name}</strong>
               <span>Administrator</span>
-            </div>
-          </div>
+            </span>
+          </button>
 
           <div className="dropdown-divider" />
 

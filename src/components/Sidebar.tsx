@@ -12,51 +12,32 @@ import {
 import { usePathname, useRouter } from 'next/navigation'
 
 const menuItems = [
-  {
-    label: 'Dashboard',
-    path: '/',
-    icon: LayoutDashboard,
-  },
-  {
-    label: 'Toko',
-    path: '/toko',
-    icon: Store,
-  },
-  {
-    label: 'Produk',
-    path: '/produk',
-    icon: Package,
-  },
-  {
-    label: 'Workshop',
-    path: '/workshop',
-    icon: Shapes,
-  },
-  {
-    label: 'Verifikasi AI',
-    path: '/verifikasi-ai',
-    icon: Sparkles,
-  },
+  { label: 'Dashboard', path: '/', icon: LayoutDashboard },
+  { label: 'Toko', path: '/toko', icon: Store },
+  { label: 'Produk', path: '/produk', icon: Package },
+  { label: 'Workshop', path: '/workshop', icon: Shapes },
+  { label: 'Verifikasi AI', path: '/verifikasi-ai', icon: Sparkles },
 ]
 
-function Sidebar({ onLogout }) {
-  const router = useRouter()
-  const pathname = usePathname()
+const settingsPaths = ['/pengaturan', '/profil', '/ganti-password']
 
-  const goTo = (path) => {
+function Sidebar({ onLogout }: { onLogout?: () => void }) {
+  const router = useRouter()
+  const pathname = usePathname() || '/'
+
+  const goTo = (path: string) => {
     router.push(path)
   }
 
-  const isSettings = pathname === '/pengaturan'
+  const isSettings = settingsPaths.some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`),
+  )
 
   return (
     <aside className="sidebar">
       <div className="brand">
         <div className="brand-logo has-image">
-          <img
-            src="/images/logodinoyo.png"
-            alt="Logo Keramik Dinoyo"
-          />
+          <img src="/images/logodinoyo.png" alt="Logo Keramik Dinoyo" />
         </div>
 
         <div>
@@ -65,62 +46,41 @@ function Sidebar({ onLogout }) {
         </div>
       </div>
 
-      <nav
-        className="sidebar-menu"
-        aria-label="Menu utama"
-      >
-        <p className="menu-title">
-          MENU UTAMA
-        </p>
+      <nav className="sidebar-menu" aria-label="Menu utama">
+        <p className="menu-title">MENU UTAMA</p>
 
-        {menuItems.map(
-          ({ label, path, icon: Icon }) => {
-            const active = pathname === path
+        {menuItems.map(({ label, path, icon: Icon }) => {
+          // Menu induk tetap menyala di halaman turunan (/toko/tambah, dst.)
+          const active =
+            path === '/' ? pathname === '/' : pathname.startsWith(path)
 
-            return (
-              <button
-                key={label}
-                type="button"
-                className={`menu-item ${
-                  active ? 'active' : ''
-                }`}
-                aria-current={
-                  active ? 'page' : undefined
-                }
-                onClick={() => goTo(path)}
-              >
-                <span className="menu-icon">
-                  <Icon
-                    size={18}
-                    aria-hidden="true"
-                  />
-                </span>
+          return (
+            <button
+              key={label}
+              type="button"
+              className={`menu-item ${active ? 'active' : ''}`}
+              aria-current={active ? 'page' : undefined}
+              onClick={() => goTo(path)}
+            >
+              <span className="menu-icon">
+                <Icon size={18} aria-hidden="true" />
+              </span>
 
-                <span>{label}</span>
-              </button>
-            )
-          },
-        )}
+              <span>{label}</span>
+            </button>
+          )
+        })}
       </nav>
 
       <div className="sidebar-bottom">
         <button
           type="button"
-          className={`menu-item ${
-            isSettings ? 'active' : ''
-          }`}
-          aria-current={
-            isSettings ? 'page' : undefined
-          }
-          onClick={() =>
-            goTo('/pengaturan')
-          }
+          className={`menu-item ${isSettings ? 'active' : ''}`}
+          aria-current={isSettings ? 'page' : undefined}
+          onClick={() => goTo('/pengaturan')}
         >
           <span className="menu-icon">
-            <Settings
-              size={18}
-              aria-hidden="true"
-            />
+            <Settings size={18} aria-hidden="true" />
           </span>
 
           <span>Pengaturan</span>
@@ -131,11 +91,7 @@ function Sidebar({ onLogout }) {
           className="logout-button"
           onClick={() => onLogout?.()}
         >
-          <LogOut
-            size={18}
-            aria-hidden="true"
-          />
-
+          <LogOut size={18} aria-hidden="true" />
           Keluar
         </button>
       </div>
