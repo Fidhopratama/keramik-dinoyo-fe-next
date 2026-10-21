@@ -1,62 +1,40 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
+import { Plus } from 'lucide-react'
+
 import AdminLayout from '../../components/AdminLayout'
-import {
-  createShop,
-  deleteShop,
-  getShops,
-  updateShop,
-} from '../../services/api'
-
-import ShopTable from './components/ShopTable'
-import ShopModal from './components/ShopModal'
-
+import useShops from '../../hooks/useShops'
 import {
   emptyForm,
-  getResponseData,
-  type Shop,
-  type ShopFormData,
-} from './components/shopData'
+  formFromShop,
+  validateShopForm,
+  validateShopImage,
+} from '../../lib/shop'
+import type { Shop, ShopFormData } from '../../types/shop'
+import ShopModal from './components/ShopModal'
+import ShopStyles from './components/ShopStyles'
+import ShopTable from './components/ShopTable'
 
 export default function TokoPage() {
-  const [shops, setShops] = useState<Shop[]>([])
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [deletingId, setDeletingId] = useState<number | string | null>(null)
+  const {
+    shops,
+    loading,
+    saving,
+    deletingId,
+    error,
+    success,
+    setError,
+    setSuccess,
+    save,
+    remove,
+  } = useShops()
+
   const [showForm, setShowForm] = useState(false)
   const [editingShop, setEditingShop] = useState<Shop | null>(null)
   const [form, setForm] = useState<ShopFormData>({ ...emptyForm })
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
-
-  const fetchShops = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError('')
-
-      const response = await getShops()
-      setShops(getResponseData(response))
-    } catch (err: unknown) {
-      console.error('Fetch shops error:', err)
-
-      const message = err as {
-        response?: { data?: { message?: string } }
-      }
-
-      setError(
-        message.response?.data?.message ||
-          'Gagal mengambil data toko.',
-      )
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    void fetchShops()
-  }, [fetchShops])
+  const [highlightId, setHighlightId] = useState('')
 
   function openAddForm() {
     setEditingShop(null)
@@ -68,32 +46,7 @@ export default function TokoPage() {
 
   function openEditForm(shop: Shop) {
     setEditingShop(shop)
-
-    setForm({
-      name: shop.name || '',
-      description: shop.description || '',
-      instagram: shop.instagram || '',
-      tiktok: shop.tiktok || '',
-      whatsapp: shop.whatsapp || '',
-      address: shop.address || '',
-      is_active:
-        shop.is_active === true ||
-        shop.is_active === 1 ||
-        shop.is_active === '1',
-      imageFile: null,
-      imagePreview: shop.image
-        ? shop.image.startsWith('http')
-          ? shop.image
-          : shop.image.startsWith('/images/')
-            ? shop.image
-            : shop.image.startsWith('/uploads/')
-              ? `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://127.0.0.1:5050'}${shop.image}`
-              : shop.image.startsWith('/')
-                ? `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://127.0.0.1:5050'}${shop.image}`
-                : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://127.0.0.1:5050'}/uploads/shops/${shop.image}`
-        : '',
-    })
-
+    setForm(formFromShop(shop))
     setError('')
     setSuccess('')
     setShowForm(true)
@@ -107,6 +60,32 @@ export default function TokoPage() {
     setForm({ ...emptyForm })
     setError('')
   }
+
+  // Dari dashboard: /toko?shop=ID menyorot dan menggulung ke kartu toko itu.
+  useEffect(() => {
+    if (loading || shops.length === 0) return
+
+    const id = new URLSearchParams(window.location.search).get('shop')
+    if (!id) return
+
+    const target = shops.find((item) => String(item.id) === id)
+
+    window.history.replaceState(null, '', window.location.pathname)
+
+    if (!target) return
+
+    setHighlightId(String(target.id))
+
+    window.setTimeout(() => {
+      document
+        .getElementById(`shop-${target.id}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 150)
+
+    const timer = window.setTimeout(() => setHighlightId(''), 4000)
+
+    return () => window.clearTimeout(timer)
+  }, [loading, shops])
 
   function handleChange(
     event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -131,16 +110,10 @@ export default function TokoPage() {
     const file = event.target.files?.[0]
     if (!file) return
 
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
+    const problem = validateShopImage(file)
 
-    if (!allowedTypes.includes(file.type)) {
-      setError('Format gambar harus JPG, PNG, atau WEBP.')
-      event.target.value = ''
-      return
-    }
-
-    if (file.size > 2 * 1024 * 1024) {
-      setError('Ukuran gambar maksimal 2 MB.')
+    if (problem) {
+      setError(problem)
       event.target.value = ''
       return
     }
@@ -157,57 +130,19 @@ export default function TokoPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    if (!form.name.trim()) {
-      setError('Nama toko wajib diisi.')
+    const problem = validateShopForm(form)
+
+    if (problem) {
+      setError(problem)
       return
     }
 
-    try {
-      setSaving(true)
-      setError('')
-      setSuccess('')
+    const ok = await save(form, editingShop)
+    if (!ok) return
 
-      const formData = new FormData()
-
-      formData.append('name', form.name.trim())
-      formData.append('description', form.description || '')
-      formData.append('instagram', form.instagram || '')
-      formData.append('tiktok', form.tiktok || '')
-      formData.append('whatsapp', form.whatsapp || '')
-      formData.append('address', form.address || '')
-      formData.append('is_active', form.is_active ? '1' : '0')
-
-      if (form.imageFile) {
-        formData.append('image', form.imageFile)
-      }
-
-      if (editingShop) {
-        await updateShop(editingShop.id, formData)
-        setSuccess('Toko berhasil diperbarui.')
-      } else {
-        await createShop(formData)
-        setSuccess('Toko berhasil ditambahkan.')
-      }
-
-      await fetchShops()
-
-      setShowForm(false)
-      setEditingShop(null)
-      setForm({ ...emptyForm })
-    } catch (err: unknown) {
-      console.error('Save shop error:', err)
-
-      const message = err as {
-        response?: { data?: { message?: string } }
-      }
-
-      setError(
-        message.response?.data?.message ||
-          'Gagal menyimpan data toko.',
-      )
-    } finally {
-      setSaving(false)
-    }
+    setShowForm(false)
+    setEditingShop(null)
+    setForm({ ...emptyForm })
   }
 
   async function handleDelete(shop: Shop) {
@@ -217,66 +152,37 @@ export default function TokoPage() {
 
     if (!confirmed) return
 
-    try {
-      setDeletingId(shop.id)
-      setError('')
-      setSuccess('')
-
-      await deleteShop(shop.id)
-
-      setShops((current) =>
-        current.filter((item) => item.id !== shop.id),
-      )
-
-      setSuccess('Toko berhasil dihapus.')
-    } catch (err: unknown) {
-      console.error('Delete shop error:', err)
-
-      const message = err as {
-        response?: { data?: { message?: string } }
-      }
-
-      setError(
-        message.response?.data?.message ||
-          'Gagal menghapus toko.',
-      )
-    } finally {
-      setDeletingId(null)
-    }
+    await remove(shop)
   }
 
   return (
     <AdminLayout>
-      <div className="page">
-        <div className="page-header">
+      <ShopStyles />
+
+      <div className="sh">
+        <div className="sh-head">
           <div>
-            <h1>Toko</h1>
-            <p>Kelola data toko keramik Dinoyo.</p>
+            <h2>Data Toko</h2>
+            <p>Kelola data toko keramik di Kampung Keramik Dinoyo.</p>
           </div>
 
-          <button
-            type="button"
-            className="primary-button"
-            onClick={openAddForm}
-          >
-            + Tambah Toko
+          <button type="button" className="sh-btn primary" onClick={openAddForm}>
+            <Plus size={18} aria-hidden="true" />
+            Tambah Toko
           </button>
         </div>
 
-        {success && (
-          <div className="alert success">{success}</div>
-        )}
+        {success && <div className="sh-alert success">{success}</div>}
 
-        {error && !showForm && (
-          <div className="alert error">{error}</div>
-        )}
+        {error && !showForm && <div className="sh-alert error">{error}</div>}
 
         {loading ? (
-          <div className="loading">Memuat data toko...</div>
+          <div className="sh-loading">Memuat data toko...</div>
         ) : (
           <ShopTable
             shops={shops}
             deletingId={deletingId}
+            highlightId={highlightId}
             onEdit={openEditForm}
             onDelete={handleDelete}
             onAdd={openAddForm}
@@ -295,13 +201,6 @@ export default function TokoPage() {
           onClose={closeForm}
         />
       </div>
-
-      {/* Pindahkan CSS lama ke sini dan gunakan jsx global. */}
-      <style jsx global>{`
-        /* CSS lama kamu tetap dipakai di sini.
-           Salin semua aturan CSS dari page.tsx sebelumnya
-           tanpa mengubah nama class-nya. */
-      `}</style>
     </AdminLayout>
   )
 }

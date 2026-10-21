@@ -1,10 +1,12 @@
 'use client'
 
 import type { ChangeEvent, FormEvent } from 'react'
-import ShopForm from './ShopForm'
-import type { ShopFormData } from './shopData'
+import { X } from 'lucide-react'
 
-interface ShopModalProps {
+import type { ShopFormData } from '../../../types/shop'
+import ShopForm from './ShopForm'
+
+type Props = {
   show: boolean
   editing: boolean
   form: ShopFormData
@@ -26,47 +28,49 @@ export default function ShopModal({
   onImageChange,
   onSubmit,
   onClose,
-}: ShopModalProps) {
+}: Props) {
   if (!show) return null
 
   return (
-    <div
-      className="modal-overlay"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget && !saving) {
-          onClose()
-        }
-      }}
-    >
-      <div className="modal">
-        <div className="modal-header">
+    <div className="sh-overlay">
+      <form className="sh-modal" onSubmit={onSubmit}>
+        <header className="sh-modal-head">
           <div>
-            <h2>{editing ? 'Edit Toko' : 'Tambah Toko'}</h2>
+            <h3>{editing ? 'Edit Toko' : 'Tambah Toko'}</h3>
             <p>Lengkapi informasi toko keramik.</p>
           </div>
 
           <button
             type="button"
-            className="close-button"
+            className="sh-close"
             onClick={onClose}
             disabled={saving}
-            aria-label="Tutup formulir"
+            aria-label="Tutup"
           >
-            ×
+            <X size={18} />
           </button>
+        </header>
+
+        <div className="sh-modal-body">
+          <ShopForm
+            form={form}
+            saving={saving}
+            onChange={onChange}
+            onImageChange={onImageChange}
+          />
+
+          {error && <div className="sh-alert error">{error}</div>}
         </div>
 
-        <ShopForm
-          form={form}
-          saving={saving}
-          editing={editing}
-          error={error}
-          onChange={onChange}
-          onImageChange={onImageChange}
-          onSubmit={onSubmit}
-          onCancel={onClose}
-        />
-      </div>
+        <footer className="sh-modal-foot">
+          <button type="button" className="sh-btn ghost" onClick={onClose} disabled={saving}>
+            Batal
+          </button>
+          <button type="submit" className="sh-btn primary" disabled={saving}>
+            {saving ? 'Menyimpan...' : editing ? 'Simpan Perubahan' : 'Tambah Toko'}
+          </button>
+        </footer>
+      </form>
     </div>
   )
 }

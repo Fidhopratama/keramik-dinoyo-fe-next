@@ -1,72 +1,46 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
+
 import AdminLayout from '../../components/AdminLayout'
+import useWorkshops from '../../hooks/useWorkshops'
 import {
-  createWorkshop,
-  deleteWorkshop,
-  getWorkshops,
-  updateWorkshop,
-} from '../../services/api'
+  filterWorkshops,
+  formFromWorkshop,
+  getImageForWorkshop,
+  initialForm,
+  validateWorkshopImage,
+} from '../../lib/workshop'
+import type { Workshop, WorkshopFormData } from '../../types/workshop'
 import WorkshopCard from './components/WorkshopCard'
 import WorkshopModal from './components/WorkshopModal'
 import WorkshopStyles from './components/WorkshopStyles'
 import WorkshopToolbar from './components/WorkshopToolbar'
-import {
-  getWorkshopImageUrl,
-  initialForm,
-  localWorkshopImages,
-  type Workshop,
-  type WorkshopFormData,
-} from './components/workshopData'
+
+function revokePreview(url: string) {
+  if (url.startsWith('blob:')) URL.revokeObjectURL(url)
+}
 
 export default function Workshop() {
-  const [workshops, setWorkshops] = useState<Workshop[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const {
+    workshops,
+    loading,
+    error,
+    saving,
+    deletingId,
+    fetchWorkshops,
+    save,
+    remove,
+  } = useWorkshops()
+
   const [showModal, setShowModal] = useState(false)
   const [editingWorkshop, setEditingWorkshop] = useState<Workshop | null>(null)
   const [form, setForm] = useState<WorkshopFormData>({ ...initialForm })
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [deletingId, setDeletingId] = useState<number | string | null>(null)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
-
-  const fetchWorkshops = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError('')
-
-      const response = await getWorkshops()
-      const data = response.data?.data || []
-
-      setWorkshops(Array.isArray(data) ? data : [])
-    } catch (err: any) {
-      console.error('GET WORKSHOP ERROR:', err)
-      setError(err.response?.data?.message || 'Data kegiatan gagal dimuat.')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    void fetchWorkshops()
-  }, [fetchWorkshops])
-
-  const getImageForWorkshop = (workshop: Workshop, index: number) => {
-    if (typeof workshop.image_url === 'string' && workshop.image_url) {
-      return getWorkshopImageUrl(workshop.image_url)
-    }
-
-    if (typeof workshop.image === 'string' && workshop.image) {
-      return getWorkshopImageUrl(workshop.image)
-    }
-
-    return localWorkshopImages[index % localWorkshopImages.length] || ''
-  }
 
   const openCreateModal = () => {
     setEditingWorkshop(null)
@@ -77,41 +51,19 @@ export default function Workshop() {
   }
 
   const openEditModal = (workshop: Workshop, index: number) => {
+    const edit = formFromWorkshop(workshop, index)
+
     setEditingWorkshop(workshop)
-
-    setForm({
-      title: workshop.title || '',
-      description: workshop.description || '',
-      instructor: workshop.instructor || '',
-      date: workshop.date ? String(workshop.date).substring(0, 10) : '',
-      start_time: workshop.start_time
-        ? String(workshop.start_time).substring(0, 5)
-        : '',
-      end_time: workshop.end_time
-        ? String(workshop.end_time).substring(0, 5)
-        : '',
-      capacity: workshop.capacity ?? 10,
-      location: workshop.location || '',
-      status: workshop.status || 'upcoming',
-    })
-
+    setForm(edit.form)
     setImageFile(null)
-
-    const existingImage =
-      workshop.image_url ||
-      workshop.image ||
-      localWorkshopImages[index % localWorkshopImages.length]
-
-    setImagePreview(existingImage ? getWorkshopImageUrl(existingImage) : '')
+    setImagePreview(edit.preview)
     setShowModal(true)
   }
 
   const closeModal = () => {
     if (saving) return
 
-    if (imagePreview.startsWith('blob:')) {
-      URL.revokeObjectURL(imagePreview)
-    }
+    revokePreview(imagePreview)
 
     setShowModal(false)
     setEditingWorkshop(null)
@@ -124,23 +76,15 @@ export default function Workshop() {
     const file = event.target.files?.[0]
     if (!file) return
 
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
+    const problem = validateWorkshopImage(file)
 
-    if (!allowedTypes.includes(file.type)) {
-      alert('Format gambar harus JPG, JPEG, PNG, atau WEBP.')
+    if (problem) {
+      alert(problem)
       event.target.value = ''
       return
     }
 
-    if (file.size > 2 * 1024 * 1024) {
-      alert('Ukuran gambar maksimal 2 MB.')
-      event.target.value = ''
-      return
-    }
-
-    if (imagePreview.startsWith('blob:')) {
-      URL.revokeObjectURL(imagePreview)
-    }
+    revokePreview(imagePreview)
 
     setImageFile(file)
     setImagePreview(URL.createObjectURL(file))
@@ -150,57 +94,21 @@ export default function Workshop() {
     event.preventDefault()
     if (saving) return
 
-    try {
-      setSaving(true)
+    const result = await save(form, imageFile, editingWorkshop)
 
-      const formData = new FormData()
-      formData.append('title', form.title.trim())
-      formData.append('description', form.description.trim())
-      formData.append('instructor', form.instructor.trim())
-      formData.append('date', form.date)
-      formData.append('start_time', form.start_time)
-      formData.append('end_time', form.end_time)
-      formData.append('capacity', String(form.capacity))
-      formData.append('location', form.location.trim())
-      formData.append('status', form.status)
+    alert(result.message)
 
-      if (imageFile) {
-        formData.append('image', imageFile)
-      }
+    if (!result.ok) return
 
-      if (editingWorkshop) {
-        await updateWorkshop(editingWorkshop.id, formData)
-        alert('Kegiatan berhasil diperbarui.')
-      } else {
-        await createWorkshop(formData)
-        alert('Kegiatan berhasil ditambahkan.')
-      }
+    revokePreview(imagePreview)
 
-      if (imagePreview.startsWith('blob:')) {
-        URL.revokeObjectURL(imagePreview)
-      }
+    setShowModal(false)
+    setEditingWorkshop(null)
+    setForm({ ...initialForm })
+    setImageFile(null)
+    setImagePreview('')
 
-      setShowModal(false)
-      setEditingWorkshop(null)
-      setForm({ ...initialForm })
-      setImageFile(null)
-      setImagePreview('')
-
-      await fetchWorkshops()
-    } catch (err: any) {
-      console.error('SAVE WORKSHOP ERROR:', err)
-
-      const validationErrors = err.response?.data?.errors
-
-      if (validationErrors) {
-        const firstError = Object.values(validationErrors).flat().find(Boolean)
-        alert(String(firstError || 'Data kegiatan tidak valid.'))
-      } else {
-        alert(err.response?.data?.message || 'Gagal menyimpan kegiatan.')
-      }
-    } finally {
-      setSaving(false)
-    }
+    await fetchWorkshops()
   }
 
   const handleDelete = async (workshop: Workshop) => {
@@ -212,37 +120,12 @@ export default function Workshop() {
 
     if (!confirmed) return
 
-    try {
-      setDeletingId(workshop.id)
-      await deleteWorkshop(workshop.id)
+    const result = await remove(workshop)
 
-      setWorkshops((prev) =>
-        prev.filter((item) => item.id !== workshop.id),
-      )
-
-      alert('Kegiatan berhasil dihapus.')
-    } catch (err: any) {
-      console.error('DELETE WORKSHOP ERROR:', err)
-      alert(err.response?.data?.message || 'Gagal menghapus kegiatan.')
-    } finally {
-      setDeletingId(null)
-    }
+    alert(result.message)
   }
 
-  const filteredWorkshops = workshops.filter((workshop) => {
-    const keyword = search.toLowerCase().trim()
-
-    const matchesSearch =
-      !keyword ||
-      workshop.title?.toLowerCase().includes(keyword) ||
-      workshop.instructor?.toLowerCase().includes(keyword) ||
-      workshop.location?.toLowerCase().includes(keyword)
-
-    const matchesStatus =
-      statusFilter === 'all' || workshop.status === statusFilter
-
-    return Boolean(matchesSearch && matchesStatus)
-  })
+  const filteredWorkshops = filterWorkshops(workshops, search, statusFilter)
 
   if (loading) {
     return (
@@ -287,7 +170,7 @@ export default function Workshop() {
         <div className="workshop-grid">
           {filteredWorkshops.length === 0 ? (
             <div className="workshop-empty">
-              <div className="workshop-empty-icon">▣</div>
+              <div className="workshop-empty-icon">{'\u25A3'}</div>
 
               <h3>
                 {workshops.length === 0

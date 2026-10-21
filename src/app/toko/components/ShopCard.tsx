@@ -1,105 +1,118 @@
 'use client'
 
-import { getShopImage, isShopActive, type Shop } from './shopData'
+import { useState } from 'react'
+import { MapPin, Pencil, Store, Trash2 } from 'lucide-react'
 
-interface ShopCardProps {
+import { getShopImage, isShopActive } from '../../../lib/shop'
+import type { Shop } from '../../../types/shop'
+
+type Props = {
   shop: Shop
   deleting: boolean
+  highlighted?: boolean
   onEdit: (shop: Shop) => void
   onDelete: (shop: Shop) => void
+}
+
+function handleOf(value?: string | null) {
+  return String(value || '').trim().replace(/^@/, '')
+}
+
+function whatsappLink(value?: string | null) {
+  let digits = String(value || '').replace(/\D/g, '')
+
+  if (!digits) return ''
+  if (digits.startsWith('0')) digits = `62${digits.slice(1)}`
+
+  return `https://wa.me/${digits}`
 }
 
 export default function ShopCard({
   shop,
   deleting,
+  highlighted,
   onEdit,
   onDelete,
-}: ShopCardProps) {
+}: Props) {
+  const [failed, setFailed] = useState(false)
+
   const image = getShopImage(shop)
+  const active = isShopActive(shop)
+
+  const instagram = handleOf(shop.instagram)
+  const tiktok = handleOf(shop.tiktok)
+  const whatsapp = whatsappLink(shop.whatsapp)
 
   return (
-    <div className="shop-card">
-      <div className="shop-image">
-        {image ? (
-          <img
-            src={image}
-            alt={shop.name}
-            onError={(event) => {
-              const fallback = `/images/${shop.name
-                .toLowerCase()
-                .replaceAll(' ', '-')}.jpg`
-
-              if (
-                event.currentTarget.dataset.fallbackTried !== 'true' &&
-                image !== fallback
-              ) {
-                event.currentTarget.dataset.fallbackTried = 'true'
-
-                const knownFallback = getShopImage({
-                  ...shop,
-                  image: null,
-                })
-
-                if (knownFallback && knownFallback !== image) {
-                  event.currentTarget.src = knownFallback
-                  return
-                }
-              }
-
-              event.currentTarget.style.display = 'none'
-            }}
-          />
+    <div
+      id={`shop-${shop.id}`}
+      className={`sh-card ${highlighted ? 'highlight' : ''}`}
+    >
+      <div className="sh-img">
+        {image && !failed ? (
+          <img src={image} alt={shop.name} onError={() => setFailed(true)} />
         ) : (
-          <div className="image-placeholder">
-            Tidak ada gambar
-          </div>
+          <Store size={40} aria-hidden="true" />
         )}
       </div>
 
-      <div className="shop-content">
-        <div className="shop-title-row">
-          <h3>{shop.name}</h3>
-
-          <span
-            className={
-              isShopActive(shop)
-                ? 'status active'
-                : 'status inactive'
-            }
-          >
-            {isShopActive(shop) ? 'Aktif' : 'Nonaktif'}
+      <div className="sh-body">
+        <div className="sh-title-row">
+          <h3 className="sh-name">{shop.name}</h3>
+          <span className={`sh-badge ${active ? 'on' : 'off'}`}>
+            {active ? 'Aktif' : 'Nonaktif'}
           </span>
         </div>
 
-        {shop.description && (
-          <p className="description">{shop.description}</p>
+        <p className="sh-desc">{shop.description || 'Belum ada deskripsi.'}</p>
+
+        <p className="sh-loc">
+          <MapPin size={16} aria-hidden="true" />
+          <span>{shop.address || 'Alamat belum diisi.'}</span>
+        </p>
+
+        {(instagram || tiktok || whatsapp) && (
+          <div className="sh-links">
+            {instagram && (
+              <a
+                className="sh-chip"
+                href={`https://instagram.com/${instagram}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Instagram
+              </a>
+            )}
+            {tiktok && (
+              <a
+                className="sh-chip"
+                href={`https://www.tiktok.com/@${tiktok}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                TikTok
+              </a>
+            )}
+            {whatsapp && (
+              <a className="sh-chip" href={whatsapp} target="_blank" rel="noreferrer">
+                WhatsApp
+              </a>
+            )}
+          </div>
         )}
 
-        {shop.address && (
-          <p className="address">📍 {shop.address}</p>
-        )}
-
-        <div className="socials">
-          {shop.instagram && <span>Instagram</span>}
-          {shop.tiktok && <span>TikTok</span>}
-          {shop.whatsapp && <span>WhatsApp</span>}
-        </div>
-
-        <div className="actions">
-          <button
-            type="button"
-            className="edit-button"
-            onClick={() => onEdit(shop)}
-          >
+        <div className="sh-actions">
+          <button type="button" className="sh-btn edit" onClick={() => onEdit(shop)}>
+            <Pencil size={16} aria-hidden="true" />
             Edit
           </button>
-
           <button
             type="button"
-            className="delete-button"
+            className="sh-btn remove"
             disabled={deleting}
             onClick={() => onDelete(shop)}
           >
+            <Trash2 size={16} aria-hidden="true" />
             {deleting ? 'Menghapus...' : 'Hapus'}
           </button>
         </div>

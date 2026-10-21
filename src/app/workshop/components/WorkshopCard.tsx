@@ -7,13 +7,8 @@ import {
   UserRound,
   UsersRound,
 } from 'lucide-react'
-import {
-  formatWorkshopDate,
-  formatWorkshopTime,
-  getWorkshopStatusClass,
-  getWorkshopStatusLabel,
-  type Workshop,
-} from './workshopData'
+import { formatWorkshopDate, formatWorkshopTime, getWorkshopStatusClass, getWorkshopStatusLabel } from '../../../lib/workshop'
+import type { Workshop } from '../../../types/workshop'
 
 type WorkshopCardProps = {
   workshop: Workshop

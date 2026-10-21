@@ -1,172 +1,130 @@
 'use client'
 
-import type { ChangeEvent, FormEvent } from 'react'
-import type { ShopFormData } from './shopData'
+import type { ChangeEvent } from 'react'
+import { ImagePlus } from 'lucide-react'
 
-interface ShopFormProps {
+import type { ShopFormData } from '../../../types/shop'
+
+type Props = {
   form: ShopFormData
   saving: boolean
-  editing: boolean
-  error: string
   onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void
   onImageChange: (event: ChangeEvent<HTMLInputElement>) => void
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void
-  onCancel: () => void
 }
 
-export default function ShopForm({
-  form,
-  saving,
-  editing,
-  error,
-  onChange,
-  onImageChange,
-  onSubmit,
-  onCancel,
-}: ShopFormProps) {
+export default function ShopForm({ form, saving, onChange, onImageChange }: Props) {
   return (
     <>
-      {error && (
-        <div className="alert error">{error}</div>
-      )}
+      <div className="sh-field">
+        <label htmlFor="name">Nama Toko</label>
+        <input
+          id="name"
+          name="name"
+          type="text"
+          placeholder="Nama toko"
+          value={form.name}
+          onChange={onChange}
+          disabled={saving}
+          required
+        />
+      </div>
 
-      <form onSubmit={onSubmit}>
-        <div className="form-group">
-          <label htmlFor="shop-name">Nama Toko</label>
+      <div className="sh-field">
+        <label htmlFor="description">Deskripsi</label>
+        <textarea
+          id="description"
+          name="description"
+          placeholder="Deskripsi toko"
+          value={form.description}
+          onChange={onChange}
+          disabled={saving}
+        />
+      </div>
+
+      <div className="sh-field">
+        <label htmlFor="address">Alamat</label>
+        <textarea
+          id="address"
+          name="address"
+          placeholder="Alamat toko"
+          value={form.address}
+          onChange={onChange}
+          disabled={saving}
+        />
+      </div>
+
+      <div className="sh-two">
+        <div className="sh-field">
+          <label htmlFor="instagram">Instagram</label>
           <input
-            id="shop-name"
+            id="instagram"
+            name="instagram"
             type="text"
-            name="name"
-            value={form.name}
+            placeholder="@username"
+            value={form.instagram}
             onChange={onChange}
-            placeholder="Nama toko"
-            required
+            disabled={saving}
           />
         </div>
 
-        <div className="form-group">
-          <label htmlFor="shop-description">Deskripsi</label>
-          <textarea
-            id="shop-description"
-            name="description"
-            value={form.description}
-            onChange={onChange}
-            rows={4}
-            placeholder="Deskripsi toko"
-          />
-        </div>
-
-        <div className="form-grid">
-          <div className="form-group">
-            <label htmlFor="shop-instagram">Instagram</label>
-            <input
-              id="shop-instagram"
-              type="text"
-              name="instagram"
-              value={form.instagram}
-              onChange={onChange}
-              placeholder="@username"
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="shop-tiktok">TikTok</label>
-            <input
-              id="shop-tiktok"
-              type="text"
-              name="tiktok"
-              value={form.tiktok}
-              onChange={onChange}
-              placeholder="@username"
-            />
-          </div>
-        </div>
-
-        <div className="form-grid">
-          <div className="form-group">
-            <label htmlFor="shop-whatsapp">WhatsApp</label>
-            <input
-              id="shop-whatsapp"
-              type="text"
-              name="whatsapp"
-              value={form.whatsapp}
-              onChange={onChange}
-              placeholder="08xxxxxxxxxx"
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Status</label>
-            <label className="checkbox">
-              <input
-                type="checkbox"
-                name="is_active"
-                checked={form.is_active}
-                onChange={onChange}
-              />
-              <span>Toko aktif</span>
-            </label>
-          </div>
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="shop-address">Alamat</label>
-          <textarea
-            id="shop-address"
-            name="address"
-            value={form.address}
-            onChange={onChange}
-            rows={3}
-            placeholder="Alamat toko"
-          />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="shop-image">Gambar Toko</label>
+        <div className="sh-field">
+          <label htmlFor="tiktok">TikTok</label>
           <input
-            id="shop-image"
+            id="tiktok"
+            name="tiktok"
+            type="text"
+            placeholder="@username"
+            value={form.tiktok}
+            onChange={onChange}
+            disabled={saving}
+          />
+        </div>
+      </div>
+
+      <div className="sh-field">
+        <label htmlFor="whatsapp">WhatsApp</label>
+        <input
+          id="whatsapp"
+          name="whatsapp"
+          type="text"
+          placeholder="08xxxxxxxxxx"
+          value={form.whatsapp}
+          onChange={onChange}
+          disabled={saving}
+        />
+      </div>
+
+      <div className="sh-field">
+        <label>Foto Toko</label>
+        <label className="sh-upload">
+          {form.imagePreview ? (
+            <img src={form.imagePreview} alt="Pratinjau toko" />
+          ) : (
+            <>
+              <ImagePlus size={28} aria-hidden="true" />
+              <span>Klik untuk memilih foto</span>
+            </>
+          )}
+          <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
             onChange={onImageChange}
+            disabled={saving}
           />
+        </label>
+        <span className="sh-help">JPG, PNG, atau WEBP. Maksimal 2 MB.</span>
+      </div>
 
-          <small>
-            JPG, PNG, atau WEBP. Maksimal 2 MB.
-          </small>
-
-          {form.imagePreview && (
-            <div className="preview">
-              <img
-                src={form.imagePreview}
-                alt="Preview toko"
-              />
-            </div>
-          )}
-        </div>
-
-        <div className="modal-actions">
-          <button
-            type="button"
-            className="cancel-button"
-            onClick={onCancel}
-            disabled={saving}
-          >
-            Batal
-          </button>
-
-          <button
-            type="submit"
-            className="primary-button"
-            disabled={saving}
-          >
-            {saving
-              ? 'Menyimpan...'
-              : editing
-                ? 'Simpan Perubahan'
-                : 'Simpan Toko'}
-          </button>
-        </div>
-      </form>
+      <label className="sh-check">
+        <input
+          type="checkbox"
+          name="is_active"
+          checked={form.is_active}
+          onChange={onChange}
+          disabled={saving}
+        />
+        Toko aktif
+      </label>
     </>
   )
 }

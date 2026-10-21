@@ -1,7 +1,7 @@
 'use client'
 
 import type { ChangeEvent, FormEvent } from 'react'
-import type { WorkshopFormData } from './workshopData'
+import type { WorkshopFormData } from '../../../types/workshop'
 import WorkshopForm from './WorkshopForm'
 
 type WorkshopModalProps = {
