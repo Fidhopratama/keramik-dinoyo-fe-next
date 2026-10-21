@@ -1,67 +1,35 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import type { FormEvent } from 'react'
-
-import api from '../../../services/api'
-
-import type {
-  LoginErrorResponse,
-  LoginResponse,
-} from './loginTypes'
+import useLogin from '../../../hooks/useLogin'
 
 export default function LoginForm() {
-  const router = useRouter()
-
-  const [email, setEmail] = useState('admin@keramikdinoyo.test')
-  const [password, setPassword] = useState('password')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-
-    if (loading) return
-
-    try {
-      setLoading(true)
-      setError('')
-
-      const response = await api.post<LoginResponse>('/login', {
-        email: email.trim(),
-        password,
-      })
-
-      const token = response.data?.data?.token
-
-      if (!token) {
-        setError('Token login tidak ditemukan. Periksa respons API.')
-        return
-      }
-
-      localStorage.setItem('keramik_dinoyo_token', token)
-
-      router.push('/')
-    } catch (err: unknown) {
-      console.error('Login error:', err)
-
-      const loginError = err as LoginErrorResponse
-
-      setError(
-        loginError.response?.data?.message ||
-          'Login gagal. Periksa email dan password kamu.',
-      )
-    } finally {
-      setLoading(false)
-    }
-  }
+  const {
+    email,
+    setEmail,
+    password,
+    setPassword,
+    loading,
+    error,
+    handleSubmit,
+  } = useLogin()
 
   return (
     <main className="login-page">
       <section className="login-card">
-        <div className="login-logo" aria-label="Keramik Dinoyo">
-          K
+        <div
+          className="login-logo"
+          aria-label="Keramik Dinoyo"
+          style={{
+            background: '#fbf3ec',
+            boxShadow: '0 10px 24px rgba(185, 111, 66, 0.22)',
+            padding: 12,
+          }}
+        >
+          <img
+            src="/images/logodinoyo.png"
+            alt="Logo Keramik Dinoyo"
+            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+          />
         </div>
 
         <h1>Keramik Dinoyo</h1>
@@ -89,7 +57,6 @@ export default function LoginForm() {
 
           <div className="login-field">
             <label htmlFor="password">Password</label>
-
             <input
               id="password"
               type="password"
@@ -125,7 +92,7 @@ export default function LoginForm() {
         </div>
 
         <p className="login-note">
-          Dashboard Admin · Keramik Dinoyo
+          Dashboard Admin {'\u00B7'} Keramik Dinoyo
         </p>
       </section>
     </main>
