@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState } from 'react'
@@ -42,9 +43,11 @@ export default function useLogin() {
         return
       }
 
+      // Simpan token setelah login berhasil.
       saveToken(token)
 
-      router.push('/')
+      // Langsung masuk ke dashboard, bukan kembali ke halaman utama.
+      router.replace('/dashboard')
     } catch (err: unknown) {
       console.error('Login error:', err)
       setError(getLoginMessage(err))
