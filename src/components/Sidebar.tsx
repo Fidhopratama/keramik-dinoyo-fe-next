@@ -12,7 +12,7 @@ import {
 import { usePathname, useRouter } from 'next/navigation'
 
 const menuItems = [
-  { label: 'Dashboard', path: '/', icon: LayoutDashboard },
+  { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   { label: 'Toko', path: '/toko', icon: Store },
   { label: 'Produk', path: '/produk', icon: Package },
   { label: 'Workshop', path: '/workshop', icon: Shapes },
@@ -51,8 +51,7 @@ function Sidebar({ onLogout }: { onLogout?: () => void }) {
 
         {menuItems.map(({ label, path, icon: Icon }) => {
           // Menu induk tetap menyala di halaman turunan (/toko/tambah, dst.)
-          const active =
-            path === '/' ? pathname === '/' : pathname.startsWith(path)
+          const active = pathname === path || pathname.startsWith(`${path}/`)
 
           return (
             <button

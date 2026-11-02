@@ -6,7 +6,7 @@ import Sidebar from './Sidebar'
 import Navbar from './Navbar'
 
 const titleMap: Record<string, string> = {
-  '/': 'Dashboard',
+  '/dashboard': 'Dashboard',
   '/toko': 'Toko',
   '/produk': 'Produk',
   '/workshop': 'Workshop',
@@ -17,7 +17,7 @@ const titleMap: Record<string, string> = {
 }
 
 const routes: Record<string, string> = {
-  Dashboard: '/',
+  Dashboard: '/dashboard',
   Toko: '/toko',
   Produk: '/produk',
   Workshop: '/workshop',
