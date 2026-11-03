@@ -58,6 +58,7 @@ const css = `
 .pr-field textarea { min-height: 90px; padding: 10px 14px; resize: vertical; }
 .pr-field input:focus, .pr-field select:focus, .pr-field textarea:focus { border-color: #c9562e; box-shadow: 0 0 0 3px rgba(201, 86, 46, 0.12); }
 .pr-help { color: #8b827b; font-size: 12px; }
+.pr-validation-error { color: #b42318; font-size: 12px; }
 .pr-two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .pr-preview { width: 100%; height: 190px; margin-top: 4px; overflow: hidden; border-radius: 12px; background: #f3efeb; }
 .pr-preview img { display: block; width: 100%; height: 100%; object-fit: cover; }

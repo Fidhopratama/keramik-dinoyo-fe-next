@@ -11,6 +11,7 @@ import {
   getImageForWorkshop,
   initialForm,
   validateWorkshopImage,
+  validateWorkshopForm,
 } from '../../lib/workshop'
 import type { Workshop, WorkshopFormData } from '../../types/workshop'
 import WorkshopCard from './components/WorkshopCard'
@@ -39,14 +40,25 @@ export default function Workshop() {
   const [form, setForm] = useState<WorkshopFormData>({ ...initialForm })
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState('')
+  const [formError, setFormError] = useState('')
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+
+  const updateForm = (
+    value:
+      | WorkshopFormData
+      | ((prev: WorkshopFormData) => WorkshopFormData),
+  ) => {
+    setForm(value)
+    setFormError('')
+  }
 
   const openCreateModal = () => {
     setEditingWorkshop(null)
     setForm({ ...initialForm })
     setImageFile(null)
     setImagePreview('')
+    setFormError('')
     setShowModal(true)
   }
 
@@ -57,6 +69,7 @@ export default function Workshop() {
     setForm(edit.form)
     setImageFile(null)
     setImagePreview(edit.preview)
+    setFormError('')
     setShowModal(true)
   }
 
@@ -70,6 +83,7 @@ export default function Workshop() {
     setForm({ ...initialForm })
     setImageFile(null)
     setImagePreview('')
+    setFormError('')
   }
 
   const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -79,7 +93,7 @@ export default function Workshop() {
     const problem = validateWorkshopImage(file)
 
     if (problem) {
-      alert(problem)
+      setFormError(problem)
       event.target.value = ''
       return
     }
@@ -88,11 +102,18 @@ export default function Workshop() {
 
     setImageFile(file)
     setImagePreview(URL.createObjectURL(file))
+    setFormError('')
   }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (saving) return
+
+    const problem = validateWorkshopForm(form, imageFile)
+    if (problem) {
+      setFormError(problem)
+      return
+    }
 
     const result = await save(form, imageFile, editingWorkshop)
 
@@ -107,6 +128,7 @@ export default function Workshop() {
     setForm({ ...initialForm })
     setImageFile(null)
     setImagePreview('')
+    setFormError('')
 
     await fetchWorkshops()
   }
@@ -220,8 +242,9 @@ export default function Workshop() {
             editing={Boolean(editingWorkshop)}
             saving={saving}
             form={form}
-            setForm={setForm}
+            setForm={updateForm}
             imagePreview={imagePreview}
+            error={formError}
             onImageChange={handleImageChange}
             onSubmit={handleSubmit}
             onClose={closeModal}

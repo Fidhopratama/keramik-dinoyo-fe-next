@@ -14,6 +14,7 @@ type WorkshopModalProps = {
       | ((prev: WorkshopFormData) => WorkshopFormData),
   ) => void
   imagePreview: string
+  error: string
   onImageChange: (event: ChangeEvent<HTMLInputElement>) => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
   onClose: () => void
@@ -25,6 +26,7 @@ export default function WorkshopModal({
   form,
   setForm,
   imagePreview,
+  error,
   onImageChange,
   onSubmit,
   onClose,
@@ -64,6 +66,7 @@ export default function WorkshopModal({
           form={form}
           setForm={setForm}
           imagePreview={imagePreview}
+          error={error}
           saving={saving}
           onImageChange={onImageChange}
           onSubmit={onSubmit}

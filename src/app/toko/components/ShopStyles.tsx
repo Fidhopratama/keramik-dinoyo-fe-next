@@ -51,10 +51,16 @@ const css = `
 .sh-modal-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 28px; border-top: 1px solid #f1ece7; background: #fff; }
 .sh-field { display: flex; flex-direction: column; gap: 8px; }
 .sh-field label { font-size: 13px; font-weight: 600; }
-.sh-field input[type="text"], .sh-field textarea { width: 100%; box-sizing: border-box; padding: 0 14px; border: 1px solid #e7e0d9; border-radius: 12px; background: #fff; color: #25211e; font-family: inherit; font-size: 14px; outline: none; }
-.sh-field input[type="text"] { height: 44px; }
+.sh-field input[type="text"], .sh-field input[type="tel"], .sh-field textarea { width: 100%; box-sizing: border-box; padding: 0 14px; border: 1px solid #e7e0d9; border-radius: 12px; background: #fff; color: #25211e; font-family: inherit; font-size: 14px; outline: none; }
+.sh-field input[type="text"], .sh-field input[type="tel"] { height: 44px; }
 .sh-field textarea { min-height: 96px; padding: 12px 14px; resize: vertical; }
-.sh-field input[type="text"]:focus, .sh-field textarea:focus { border-color: #c9562e; box-shadow: 0 0 0 3px rgba(201, 86, 46, 0.12); }
+.sh-field input[type="text"]:focus, .sh-field input[type="tel"]:focus, .sh-field textarea:focus { border-color: #c9562e; box-shadow: 0 0 0 3px rgba(201, 86, 46, 0.12); }
+.sh-address-suggestions { display: flex; flex-direction: column; max-height: 220px; overflow-y: auto; border: 1px solid #e7e0d9; border-radius: 12px; background: #fff; }
+.sh-address-suggestion { padding: 11px 14px; border: 0; border-bottom: 1px solid #f1ece7; background: #fff; color: #4a423d; text-align: left; font: inherit; font-size: 13px; cursor: pointer; }
+.sh-address-suggestion:last-child { border-bottom: 0; }
+.sh-address-suggestion:hover, .sh-address-suggestion:focus-visible { background: #faf4ef; color: #b24a27; outline: none; }
+.sh-address-error { color: #b42318; }
+.sh-help a { color: #a64b2b; }
 .sh-two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .sh-check { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 1px solid #e7e0d9; border-radius: 12px; font-size: 14px; cursor: pointer; }
 .sh-check input { width: 18px; height: 18px; accent-color: #c9562e; }

@@ -11,8 +11,10 @@ type Props = {
   editing: boolean
   form: ShopFormData
   saving: boolean
+  selectedAddress: string
   error: string
   onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void
+  onAddressSelect: (address: string) => void
   onImageChange: (event: ChangeEvent<HTMLInputElement>) => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
   onClose: () => void
@@ -23,8 +25,10 @@ export default function ShopModal({
   editing,
   form,
   saving,
+  selectedAddress,
   error,
   onChange,
+  onAddressSelect,
   onImageChange,
   onSubmit,
   onClose,
@@ -55,7 +59,9 @@ export default function ShopModal({
           <ShopForm
             form={form}
             saving={saving}
+            selectedAddress={selectedAddress}
             onChange={onChange}
+            onAddressSelect={onAddressSelect}
             onImageChange={onImageChange}
           />
 

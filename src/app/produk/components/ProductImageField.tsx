@@ -13,11 +13,11 @@ export default function ProductImageField({ preview, onChange }: Props) {
       <input
         id="image"
         type="file"
-        accept="image/jpeg,image/png,image/webp"
+        accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
         onChange={onChange}
       />
 
-      <small className="pr-help">JPG, PNG, atau WEBP. Maksimal 2 MB.</small>
+      <small className="pr-help">JPG/JPEG, PNG, atau WEBP. Maksimal 5 MB.</small>
 
       {preview && (
         <div className="pr-preview">

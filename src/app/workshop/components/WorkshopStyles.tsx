@@ -441,6 +441,20 @@ export default function WorkshopStyles() {
         resize: vertical !important;
       }
 
+      .workshop-page .workshop-field-help {
+        display: block !important;
+        margin-top: 6px !important;
+        color: #806f62 !important;
+        font-size: 12px !important;
+      }
+
+      .workshop-page .workshop-field-error {
+        display: block !important;
+        margin-top: 6px !important;
+        color: #b42318 !important;
+        font-size: 12px !important;
+      }
+
       .workshop-page .workshop-form-group input:focus,
       .workshop-page .workshop-form-group textarea:focus,
       .workshop-page .workshop-form-group select:focus {

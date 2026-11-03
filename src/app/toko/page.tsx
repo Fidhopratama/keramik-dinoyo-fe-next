@@ -35,10 +35,12 @@ export default function TokoPage() {
   const [editingShop, setEditingShop] = useState<Shop | null>(null)
   const [form, setForm] = useState<ShopFormData>({ ...emptyForm })
   const [highlightId, setHighlightId] = useState('')
+  const [selectedAddress, setSelectedAddress] = useState('')
 
   function openAddForm() {
     setEditingShop(null)
     setForm({ ...emptyForm })
+    setSelectedAddress('')
     setError('')
     setSuccess('')
     setShowForm(true)
@@ -47,6 +49,7 @@ export default function TokoPage() {
   function openEditForm(shop: Shop) {
     setEditingShop(shop)
     setForm(formFromShop(shop))
+    setSelectedAddress(shop.address || '')
     setError('')
     setSuccess('')
     setShowForm(true)
@@ -58,6 +61,7 @@ export default function TokoPage() {
     setShowForm(false)
     setEditingShop(null)
     setForm({ ...emptyForm })
+    setSelectedAddress('')
     setError('')
   }
 
@@ -91,6 +95,11 @@ export default function TokoPage() {
     event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) {
     const target = event.target
+    setError('')
+
+    if (target.name === 'address') {
+      setSelectedAddress('')
+    }
 
     if (target instanceof HTMLInputElement && target.type === 'checkbox') {
       setForm((current) => ({
@@ -104,6 +113,12 @@ export default function TokoPage() {
       ...current,
       [target.name]: target.value,
     }))
+  }
+
+  function handleAddressSelect(address: string) {
+    setSelectedAddress(address)
+    setForm((current) => ({ ...current, address }))
+    setError('')
   }
 
   function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
@@ -130,7 +145,7 @@ export default function TokoPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    const problem = validateShopForm(form)
+    const problem = validateShopForm(form, selectedAddress)
 
     if (problem) {
       setError(problem)
@@ -194,8 +209,10 @@ export default function TokoPage() {
           editing={Boolean(editingShop)}
           form={form}
           saving={saving}
+          selectedAddress={selectedAddress}
           error={error}
           onChange={handleChange}
+          onAddressSelect={handleAddressSelect}
           onImageChange={handleImageChange}
           onSubmit={handleSubmit}
           onClose={closeForm}

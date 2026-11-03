@@ -1,4 +1,10 @@
-import { API_ORIGIN, toList } from './common'
+import {
+  API_ORIGIN,
+  toList,
+  validateDetailedAddress,
+  validateImageFile,
+  validateIndonesianMobileNumber,
+} from './common'
 import type { Shop, ShopFormData } from '../types/shop'
 
 export const API_URL = API_ORIGIN
@@ -71,18 +77,29 @@ export function formFromShop(shop: Shop): ShopFormData {
   }
 }
 
-// Foto: maksimal 2 MB, format JPG, PNG, atau WEBP.
 export function validateShopImage(file: File): string {
-  const allowed = ['image/jpeg', 'image/png', 'image/webp']
-
-  if (!allowed.includes(file.type)) return 'Format gambar harus JPG, PNG, atau WEBP.'
-  if (file.size > 2 * 1024 * 1024) return 'Ukuran gambar maksimal 2 MB.'
-
-  return ''
+  return validateImageFile(file)
 }
 
-export function validateShopForm(form: ShopFormData): string {
+export function validateShopForm(
+  form: ShopFormData,
+  selectedAddress: string,
+): string {
   if (!form.name.trim()) return 'Nama toko wajib diisi.'
+  if (!form.address.trim()) return 'Alamat toko wajib diisi.'
+  const addressProblem = validateDetailedAddress(form.address, 'Alamat toko')
+  if (addressProblem) return addressProblem
+  if (form.address.trim() !== selectedAddress.trim()) {
+    return 'Pilih alamat dari saran yang tersedia sebelum menyimpan.'
+  }
+  if (form.whatsapp.trim()) {
+    const phoneProblem = validateIndonesianMobileNumber(form.whatsapp)
+    if (phoneProblem) return phoneProblem
+  }
+  if (form.imageFile) {
+    const imageProblem = validateShopImage(form.imageFile)
+    if (imageProblem) return imageProblem
+  }
 
   return ''
 }

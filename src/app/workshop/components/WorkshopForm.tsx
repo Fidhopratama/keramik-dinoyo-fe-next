@@ -1,6 +1,7 @@
 'use client'
 
 import type { ChangeEvent, FormEvent } from 'react'
+import { validateDetailedAddress } from '../../../lib/common'
 import type { WorkshopFormData } from '../../../types/workshop'
 
 type WorkshopFormProps = {
@@ -11,6 +12,7 @@ type WorkshopFormProps = {
       | ((prev: WorkshopFormData) => WorkshopFormData),
   ) => void
   imagePreview: string
+  error: string
   saving: boolean
   onImageChange: (event: ChangeEvent<HTMLInputElement>) => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
@@ -22,6 +24,7 @@ export default function WorkshopForm({
   form,
   setForm,
   imagePreview,
+  error,
   saving,
   onImageChange,
   onSubmit,
@@ -36,6 +39,9 @@ export default function WorkshopForm({
     const { name, value } = event.target
     setForm((prev) => ({ ...prev, [name]: value }))
   }
+  const locationError = form.location.trim()
+    ? validateDetailedAddress(form.location, 'Lokasi workshop')
+    : ''
 
   return (
     <form onSubmit={onSubmit}>
@@ -158,15 +164,25 @@ export default function WorkshopForm({
       </div>
 
       <div className="workshop-form-group">
-        <label>Lokasi</label>
+        <label>
+          Lokasi<span>*</span>
+        </label>
         <input
           type="text"
           name="location"
           value={form.location}
           onChange={handleChange}
-          placeholder="Contoh: Studio Keramik Dinoyo"
+          placeholder="Lokasi workshop"
+          required
           disabled={saving}
+          aria-invalid={Boolean(locationError)}
+          aria-describedby={locationError ? 'workshop-location-error' : undefined}
         />
+        {locationError && (
+          <small id="workshop-location-error" className="workshop-field-error" role="alert">
+            {locationError}
+          </small>
+        )}
       </div>
 
       <div className="workshop-form-group">
@@ -175,7 +191,7 @@ export default function WorkshopForm({
           id="workshop-image-input"
           className="workshop-file"
           type="file"
-          accept="image/jpeg,image/png,image/webp"
+          accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
           onChange={onImageChange}
           disabled={saving}
         />
@@ -187,11 +203,13 @@ export default function WorkshopForm({
             <>
               <span className="workshop-upload-icon">↑</span>
               <strong>Klik untuk memilih gambar</strong>
-              <small>JPG, PNG, WEBP — maksimal 2 MB</small>
+              <small>JPG/JPEG, PNG, WEBP — maksimal 5 MB</small>
             </>
           )}
         </label>
       </div>
+
+      {error && <div className="workshop-error" role="alert">{error}</div>}
 
       <div className="workshop-modal-actions">
         <button

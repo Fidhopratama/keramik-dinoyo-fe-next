@@ -3,6 +3,7 @@
 import type { ChangeEvent, FormEvent } from 'react'
 import { X } from 'lucide-react'
 
+import { validatePrice } from '../../../lib/product'
 import type { ProductForm, Shop } from '../../../types/product'
 import ProductImageField from './ProductImageField'
 
@@ -31,6 +32,8 @@ export default function ProductFormModal({
   onSubmit,
   onClose,
 }: Props) {
+  const priceError = form.price.trim() ? validatePrice(form.price) : ''
+
   return (
     <div className="pr-overlay">
       <div className="pr-modal" role="dialog" aria-modal="true">
@@ -107,12 +110,23 @@ export default function ProductFormModal({
               <input
                 id="price"
                 name="price"
-                type="number"
-                min="0"
+                type="text"
+                inputMode="numeric"
                 value={form.price}
                 onChange={onChange}
+                placeholder="15000 atau Rp 15.000"
                 required
+                aria-invalid={Boolean(priceError)}
+                aria-describedby={priceError ? 'price-help price-error' : 'price-help'}
               />
+              <small id="price-help" className="pr-help">
+                Gunakan angka seperti 15000 atau Rp 15.000.
+              </small>
+              {priceError && (
+                <small id="price-error" className="pr-validation-error" role="alert">
+                  {priceError}
+                </small>
+              )}
             </div>
 
             <div className="pr-field">

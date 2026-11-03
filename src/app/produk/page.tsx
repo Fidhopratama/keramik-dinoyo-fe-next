@@ -71,6 +71,7 @@ export default function ProdukPage() {
   ) => {
     const { name, value } = event.target
     setForm((current) => ({ ...current, [name]: value }))
+    setFormError('')
   }
 
   const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {

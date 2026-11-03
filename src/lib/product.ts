@@ -1,4 +1,4 @@
-import { API_ORIGIN } from './common'
+import { API_ORIGIN, validateImageFile } from './common'
 import type { Product, ProductForm } from '../types/product'
 
 export function getProductImage(product?: Product | null) {
@@ -46,21 +46,39 @@ export function formatPrice(value: unknown) {
   return Number(value || 0).toLocaleString('id-ID')
 }
 
-// Foto: maksimal 2 MB, format JPG, PNG, atau WEBP.
 export function validateImage(file: File) {
-  if (file.size > 2 * 1024 * 1024) return 'Ukuran foto maksimal 2 MB.'
+  return validateImageFile(file)
+}
 
-  const allowed = ['image/jpeg', 'image/png', 'image/webp']
-  if (!allowed.includes(file.type)) return 'Format foto harus JPG, PNG, atau WEBP.'
+export function validatePrice(value: string): string {
+  const price = value.trim()
+
+  if (!/^(?:Rp\s*)?(?:\d+|\d{1,3}(?:\.\d{3})+)$/i.test(price)) {
+    return 'Format harga tidak valid. Gunakan angka seperti 15000 atau Rp 15.000.'
+  }
 
   return ''
+}
+
+function normalizePrice(value: string): string {
+  return value.trim().replace(/^Rp\s*/i, '').replace(/\./g, '')
 }
 
 export function validateForm(form: ProductForm) {
   if (!form.shop_id) return 'Toko wajib dipilih.'
   if (!form.name.trim()) return 'Nama produk wajib diisi.'
-  if (form.price === '' || Number(form.price) < 0) return 'Harga produk tidak valid.'
+  if (!form.price.trim()) return 'Harga produk wajib diisi.'
+  const priceProblem = validatePrice(form.price)
+  if (priceProblem) return priceProblem
+  const numericPrice = Number(normalizePrice(form.price))
+  if (!Number.isFinite(numericPrice) || numericPrice < 0) {
+    return 'Harga produk tidak valid.'
+  }
   if (form.stock === '' || Number(form.stock) < 0) return 'Stok produk tidak valid.'
+  if (form.imageFile) {
+    const imageProblem = validateImage(form.imageFile)
+    if (imageProblem) return imageProblem
+  }
 
   return ''
 }
@@ -81,7 +99,7 @@ export function buildFormData(form: ProductForm, editing: Product | null) {
 
   data.append('slug', editing?.slug ? editing.slug : `${baseSlug}-${Date.now()}`)
   data.append('description', form.description)
-  data.append('price', form.price)
+  data.append('price', normalizePrice(form.price))
   data.append('stock', form.stock)
   data.append('status', form.status)
 

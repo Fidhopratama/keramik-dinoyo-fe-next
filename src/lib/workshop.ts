@@ -1,4 +1,4 @@
-import { API_ORIGIN } from './common'
+import { API_ORIGIN, validateDetailedAddress, validateImageFile } from './common'
 import type { Workshop, WorkshopFormData } from '../types/workshop'
 
 export const localWorkshopImages = [
@@ -126,15 +126,23 @@ export function formFromWorkshop(
   }
 }
 
-// Foto: maksimal 2 MB, format JPG, PNG, atau WEBP.
 export function validateWorkshopImage(file: File): string {
-  const allowed = ['image/jpeg', 'image/png', 'image/webp']
+  return validateImageFile(file)
+}
 
-  if (!allowed.includes(file.type)) {
-    return 'Format gambar harus JPG, JPEG, PNG, atau WEBP.'
+export function validateWorkshopForm(
+  form: WorkshopFormData,
+  imageFile: File | null,
+): string {
+  if (!form.location.trim()) return 'Lokasi workshop wajib diisi: minimal 15 karakter dan 3 kata.'
+
+  const addressProblem = validateDetailedAddress(form.location, 'Lokasi workshop')
+  if (addressProblem) return addressProblem
+
+  if (imageFile) {
+    const imageProblem = validateWorkshopImage(imageFile)
+    if (imageProblem) return imageProblem
   }
-
-  if (file.size > 2 * 1024 * 1024) return 'Ukuran gambar maksimal 2 MB.'
 
   return ''
 }
