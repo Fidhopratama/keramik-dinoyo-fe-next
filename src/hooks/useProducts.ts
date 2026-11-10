@@ -10,7 +10,9 @@ import {
   updateProduct,
 } from '../services/api'
 import { getMessage } from '../lib/common'
-import { buildFormData, getFormMessage } from '../lib/product'
+import { uploadImageToCloudinary } from '../lib/imageUpload'
+import type { ImageUploadPhase } from '../lib/imageUpload'
+import { buildProductPayload, getFormMessage } from '../lib/product'
 import type { Product, ProductForm, Shop } from '../types/product'
 
 export default function useProducts() {
@@ -21,6 +23,10 @@ export default function useProducts() {
   const [deletingId, setDeletingId] = useState<number | string | null>(null)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
+  const [imageUploadStatus, setImageUploadStatus] =
+    useState<ImageUploadPhase>('idle')
+  const [imageUploadProgress, setImageUploadProgress] = useState(0)
+  const [imageUploadMessage, setImageUploadMessage] = useState('')
 
   const fetchData = useCallback(async () => {
     try {
@@ -51,10 +57,25 @@ export default function useProducts() {
 
   // Mengembalikan pesan error, atau teks kosong kalau berhasil.
   const save = async (form: ProductForm, editing: Product | null) => {
+    let imageUploadInProgress = false
     try {
       setSaving(true)
 
-      const data = buildFormData(form, editing)
+      setImageUploadStatus('idle')
+      setImageUploadProgress(0)
+      setImageUploadMessage('')
+
+      let imageUrl: string | undefined
+      if (form.imageFile) {
+        imageUploadInProgress = true
+        imageUrl = await uploadImageToCloudinary(
+          form.imageFile,
+          setImageUploadProgress,
+          setImageUploadStatus,
+        )
+        imageUploadInProgress = false
+      }
+      const data = buildProductPayload(form, editing, imageUrl)
 
       if (editing) {
         await updateProduct(editing.id, data)
@@ -65,7 +86,15 @@ export default function useProducts() {
       await fetchData()
       return ''
     } catch (err) {
-      console.error(err)
+      if (imageUploadInProgress) {
+        setImageUploadStatus('error')
+        const uploadError =
+          err instanceof Error ? err.message : 'Upload gambar gagal.'
+        setImageUploadMessage(uploadError)
+        return uploadError
+      } else {
+        console.error(err)
+      }
       return getFormMessage(err, 'Gagal menyimpan produk.')
     } finally {
       setSaving(false)
@@ -96,6 +125,9 @@ export default function useProducts() {
     saving,
     deletingId,
     error,
+    imageUploadStatus,
+    imageUploadProgress,
+    imageUploadMessage,
     search,
     setSearch,
     fetchData,

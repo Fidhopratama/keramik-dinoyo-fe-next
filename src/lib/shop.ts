@@ -104,18 +104,20 @@ export function validateShopForm(
   return ''
 }
 
-export function buildShopFormData(form: ShopFormData): FormData {
-  const data = new FormData()
+export function buildShopPayload(
+  form: ShopFormData,
+  imageUrl?: string,
+) {
+  const data: Record<string, string> = {
+    name: form.name.trim(),
+    description: form.description || '',
+    instagram: form.instagram || '',
+    tiktok: form.tiktok || '',
+    whatsapp: form.whatsapp || '',
+    address: form.address || '',
+    is_active: form.is_active ? '1' : '0',
+  }
 
-  data.append('name', form.name.trim())
-  data.append('description', form.description || '')
-  data.append('instagram', form.instagram || '')
-  data.append('tiktok', form.tiktok || '')
-  data.append('whatsapp', form.whatsapp || '')
-  data.append('address', form.address || '')
-  data.append('is_active', form.is_active ? '1' : '0')
-
-  if (form.imageFile) data.append('image', form.imageFile)
-
+  if (imageUrl) data.image = imageUrl
   return data
 }

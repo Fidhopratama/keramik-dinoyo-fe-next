@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { User } from 'lucide-react'
 
+import ImageUploadField from '../../../components/ImageUploadField'
 import type { ProfileData } from '../../../types/profile'
 
 type Props = {
@@ -17,6 +18,7 @@ export default function ProfileForm({ profile, loading, saving, onSave }: Props)
   const [form, setForm] = useState<ProfileData>(profile)
   const [editing, setEditing] = useState(false)
   const [error, setError] = useState('')
+  const [imageFile, setImageFile] = useState<File | null>(null)
 
   useEffect(() => {
     if (!editing) setForm(profile)
@@ -48,6 +50,7 @@ export default function ProfileForm({ profile, loading, saving, onSave }: Props)
 
   const cancel = () => {
     setForm(profile)
+    setImageFile(null)
     setError('')
     setEditing(false)
   }
@@ -67,6 +70,21 @@ export default function ProfileForm({ profile, loading, saving, onSave }: Props)
       </header>
 
       <form className="pf-body" onSubmit={submit}>
+        <ImageUploadField
+          id="admin-profile-image"
+          label="Foto Admin"
+          file={imageFile}
+          imageUrl={profile.imageUrl}
+          disabled={locked || saving}
+          status={imageFile ? 'ready' : 'idle'}
+          statusMessage={
+            imageFile
+              ? 'Pratinjau lokal saja. Upload foto belum aktif hingga kontrak Backend tersedia.'
+              : undefined
+          }
+          onChange={setImageFile}
+        />
+
         <div className="pf-two">
           <label className="pf-field">
             <span>Nama Admin</span>

@@ -16,6 +16,7 @@ export type Product = {
   stock?: number | string
   status?: string
   image?: string
+  image_url?: string | null
 }
 
 export type ProductForm = {

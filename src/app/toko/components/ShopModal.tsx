@@ -4,6 +4,7 @@ import type { ChangeEvent, FormEvent } from 'react'
 import { X } from 'lucide-react'
 
 import type { ShopFormData } from '../../../types/shop'
+import type { ImageUploadPhase } from '../../../lib/imageUpload'
 import ShopForm from './ShopForm'
 
 type Props = {
@@ -11,11 +12,14 @@ type Props = {
   editing: boolean
   form: ShopFormData
   saving: boolean
+  imageUploadStatus: ImageUploadPhase
+  imageUploadProgress: number
+  imageUploadMessage: string
   selectedAddress: string
   error: string
   onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void
   onAddressSelect: (address: string) => void
-  onImageChange: (event: ChangeEvent<HTMLInputElement>) => void
+  onImageChange: (file: File | null) => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
   onClose: () => void
 }
@@ -25,6 +29,9 @@ export default function ShopModal({
   editing,
   form,
   saving,
+  imageUploadStatus,
+  imageUploadProgress,
+  imageUploadMessage,
   selectedAddress,
   error,
   onChange,
@@ -59,6 +66,9 @@ export default function ShopModal({
           <ShopForm
             form={form}
             saving={saving}
+            imageUploadStatus={imageUploadStatus}
+            imageUploadProgress={imageUploadProgress}
+            imageUploadMessage={imageUploadMessage}
             selectedAddress={selectedAddress}
             onChange={onChange}
             onAddressSelect={onAddressSelect}

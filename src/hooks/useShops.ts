@@ -4,7 +4,9 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { createShop, deleteShop, getShops, updateShop } from '../services/api'
 import { getMessage } from '../lib/common'
-import { buildShopFormData, getResponseData } from '../lib/shop'
+import { uploadImageToCloudinary } from '../lib/imageUpload'
+import type { ImageUploadPhase } from '../lib/imageUpload'
+import { buildShopPayload, getResponseData } from '../lib/shop'
 import type { Shop, ShopFormData } from '../types/shop'
 
 export default function useShops() {
@@ -14,6 +16,10 @@ export default function useShops() {
   const [deletingId, setDeletingId] = useState<number | string | null>(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [imageUploadStatus, setImageUploadStatus] =
+    useState<ImageUploadPhase>('idle')
+  const [imageUploadProgress, setImageUploadProgress] = useState(0)
+  const [imageUploadMessage, setImageUploadMessage] = useState('')
 
   const fetchShops = useCallback(async () => {
     try {
@@ -36,12 +42,26 @@ export default function useShops() {
 
   // Mengembalikan true kalau berhasil disimpan.
   const save = async (form: ShopFormData, editing: Shop | null) => {
+    let imageUploadInProgress = false
     try {
       setSaving(true)
       setError('')
       setSuccess('')
+      setImageUploadStatus('idle')
+      setImageUploadProgress(0)
+      setImageUploadMessage('')
 
-      const data = buildShopFormData(form)
+      let imageUrl: string | undefined
+      if (form.imageFile) {
+        imageUploadInProgress = true
+        imageUrl = await uploadImageToCloudinary(
+          form.imageFile,
+          setImageUploadProgress,
+          setImageUploadStatus,
+        )
+        imageUploadInProgress = false
+      }
+      const data = buildShopPayload(form, imageUrl)
 
       if (editing) {
         await updateShop(editing.id, data)
@@ -54,8 +74,18 @@ export default function useShops() {
       await fetchShops()
       return true
     } catch (err: unknown) {
-      console.error('Save shop error:', err)
-      setError(getMessage(err, 'Gagal menyimpan data toko.'))
+      if (imageUploadInProgress) {
+        setImageUploadStatus('error')
+        const uploadError =
+          err instanceof Error ? err.message : 'Upload gambar gagal.'
+        setImageUploadMessage(uploadError)
+        setError(uploadError)
+      } else {
+        console.error('Save shop error:', err)
+      }
+      if (!imageUploadInProgress) {
+        setError(getMessage(err, 'Gagal menyimpan data toko.'))
+      }
       return false
     } finally {
       setSaving(false)
@@ -87,6 +117,9 @@ export default function useShops() {
     deletingId,
     error,
     success,
+    imageUploadStatus,
+    imageUploadProgress,
+    imageUploadMessage,
     setError,
     setSuccess,
     fetchShops,

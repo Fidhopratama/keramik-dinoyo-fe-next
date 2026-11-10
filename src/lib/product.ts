@@ -2,11 +2,12 @@ import { API_ORIGIN, validateImageFile } from './common'
 import type { Product, ProductForm } from '../types/product'
 
 export function getProductImage(product?: Product | null) {
-  const image = product?.image
+  const image = product?.image_url || product?.image
 
   if (!image) return ''
 
   if (image.startsWith('http://') || image.startsWith('https://')) return image
+  if (image.startsWith('blob:')) return image
   if (image.startsWith('/uploads/')) return `${API_ORIGIN}${image}`
   if (image.startsWith('uploads/')) return `${API_ORIGIN}/${image}`
   if (image.startsWith('/images/')) return image
@@ -83,13 +84,20 @@ export function validateForm(form: ProductForm) {
   return ''
 }
 
-// Saat tambah produk, slug dibuat unik. Saat edit, slug lama dipertahankan.
-export function buildFormData(form: ProductForm, editing: Product | null) {
-  const data = new FormData()
-
-  data.append('shop_id', form.shop_id)
-  if (form.category_id) data.append('category_id', form.category_id)
-  data.append('name', form.name)
+export function buildProductPayload(
+  form: ProductForm,
+  editing: Product | null,
+  imageUrl?: string,
+) {
+  const data: Record<string, string> = {
+    shop_id: form.shop_id,
+    name: form.name,
+    description: form.description,
+    price: normalizePrice(form.price),
+    stock: form.stock,
+    status: form.status,
+  }
+  if (form.category_id) data.category_id = form.category_id
 
   const baseSlug = form.name
     .toLowerCase()
@@ -97,13 +105,8 @@ export function buildFormData(form: ProductForm, editing: Product | null) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
 
-  data.append('slug', editing?.slug ? editing.slug : `${baseSlug}-${Date.now()}`)
-  data.append('description', form.description)
-  data.append('price', normalizePrice(form.price))
-  data.append('stock', form.stock)
-  data.append('status', form.status)
-
-  if (form.imageFile) data.append('image', form.imageFile)
+  data.slug = editing?.slug ? editing.slug : `${baseSlug}-${Date.now()}`
+  if (imageUrl) data.image = imageUrl
 
   return data
 }

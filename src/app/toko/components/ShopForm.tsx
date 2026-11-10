@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import type { ChangeEvent } from 'react'
-import { ImagePlus } from 'lucide-react'
 
+import ImageUploadField from '../../../components/ImageUploadField'
+import type { ImageUploadPhase } from '../../../lib/imageUpload'
 import {
   validateDetailedAddress,
   validateIndonesianMobileNumber,
@@ -32,10 +33,13 @@ type AddressFeature = {
 type Props = {
   form: ShopFormData
   saving: boolean
+  imageUploadStatus: ImageUploadPhase
+  imageUploadProgress: number
+  imageUploadMessage: string
   selectedAddress: string
   onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void
   onAddressSelect: (address: string) => void
-  onImageChange: (event: ChangeEvent<HTMLInputElement>) => void
+  onImageChange: (file: File | null) => void
 }
 
 function addressLabel(feature: AddressFeature): string {
@@ -53,7 +57,7 @@ function addressLabel(feature: AddressFeature): string {
     place.country,
   ].filter((part): part is string => Boolean(part?.trim()))
 
-  return [...new Set(parts)].join(', ')
+  return Array.from(new Set(parts)).join(', ')
 }
 
 function isNearDinoyo(feature: AddressFeature): boolean {
@@ -88,6 +92,9 @@ function isNearDinoyo(feature: AddressFeature): boolean {
 export default function ShopForm({
   form,
   saving,
+  imageUploadStatus,
+  imageUploadProgress,
+  imageUploadMessage,
   selectedAddress,
   onChange,
   onAddressSelect,
@@ -304,7 +311,8 @@ export default function ShopForm({
           onChange={(event) => {
             let digitCount = 0
             const value = event.currentTarget.value
-            const limitedValue = [...value]
+            const limitedValue = value
+              .split('')
               .filter((character) => {
                 if (!/\d/.test(character)) return true
                 digitCount += 1
@@ -327,24 +335,17 @@ export default function ShopForm({
       </div>
 
       <div className="sh-field">
-        <label>Foto Toko</label>
-        <label className="sh-upload">
-          {form.imagePreview ? (
-            <img src={form.imagePreview} alt="Pratinjau toko" />
-          ) : (
-            <>
-              <ImagePlus size={28} aria-hidden="true" />
-              <span>Klik untuk memilih foto</span>
-            </>
-          )}
-          <input
-            type="file"
-            accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
-            onChange={onImageChange}
-            disabled={saving}
-          />
-        </label>
-        <span className="sh-help">JPG/JPEG, PNG, atau WEBP. Maksimal 5 MB.</span>
+        <ImageUploadField
+          id="shop-image"
+          label="Foto Toko"
+          file={form.imageFile}
+          imageUrl={form.imagePreview}
+          disabled={saving}
+          status={imageUploadStatus}
+          progress={imageUploadProgress}
+          statusMessage={imageUploadMessage}
+          onChange={onImageChange}
+        />
       </div>
 
       <label className="sh-check">

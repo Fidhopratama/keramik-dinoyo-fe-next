@@ -136,4 +136,7 @@ export const ceramicFinder = (data) =>
 export const getAiAnalysisResults = () =>
   api.get('/ai/analysis-results')
 
+export const createCloudinaryUploadSignature = () =>
+  api.post('/uploads/cloudinary-signature')
+
 export default api

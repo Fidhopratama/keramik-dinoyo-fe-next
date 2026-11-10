@@ -1,3 +1,4 @@
+
 'use client'
 
 import type { ReactNode } from 'react'
@@ -30,7 +31,6 @@ const routes: Record<string, string> = {
 function getTitle(pathname: string) {
   if (titleMap[pathname]) return titleMap[pathname]
 
-  // Halaman turunan, mis. /toko/tambah atau /produk/1/edit -> judul menu induk
   const root = `/${pathname.split('/')[1] || ''}`
   return titleMap[root] || 'Dashboard'
 }
@@ -44,7 +44,7 @@ function AdminLayout({ children }: { children: ReactNode }) {
   const handleMenuChange = (menu: string) => {
     const route = routes[menu]
 
-    if (route) {
+    if (route && route !== pathname) {
       router.push(route)
     }
   }
@@ -52,9 +52,11 @@ function AdminLayout({ children }: { children: ReactNode }) {
   const handleLogout = () => {
     try {
       localStorage.removeItem('keramik_dinoyo_token')
-    } catch {}
+    } catch (error) {
+      console.error('Gagal menghapus token:', error)
+    }
 
-    router.push('/login')
+    router.replace('/login')
   }
 
   return (

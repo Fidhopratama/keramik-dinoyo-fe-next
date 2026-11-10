@@ -10,7 +10,6 @@ import {
   formFromWorkshop,
   getImageForWorkshop,
   initialForm,
-  validateWorkshopImage,
   validateWorkshopForm,
 } from '../../lib/workshop'
 import type { Workshop, WorkshopFormData } from '../../types/workshop'
@@ -19,10 +18,6 @@ import WorkshopModal from './components/WorkshopModal'
 import WorkshopStyles from './components/WorkshopStyles'
 import WorkshopToolbar from './components/WorkshopToolbar'
 
-function revokePreview(url: string) {
-  if (url.startsWith('blob:')) URL.revokeObjectURL(url)
-}
-
 export default function Workshop() {
   const {
     workshops,
@@ -30,6 +25,9 @@ export default function Workshop() {
     error,
     saving,
     deletingId,
+    imageUploadStatus,
+    imageUploadProgress,
+    imageUploadMessage,
     fetchWorkshops,
     save,
     remove,
@@ -76,8 +74,6 @@ export default function Workshop() {
   const closeModal = () => {
     if (saving) return
 
-    revokePreview(imagePreview)
-
     setShowModal(false)
     setEditingWorkshop(null)
     setForm({ ...initialForm })
@@ -86,22 +82,8 @@ export default function Workshop() {
     setFormError('')
   }
 
-  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    const problem = validateWorkshopImage(file)
-
-    if (problem) {
-      setFormError(problem)
-      event.target.value = ''
-      return
-    }
-
-    revokePreview(imagePreview)
-
+  const handleImageChange = (file: File | null) => {
     setImageFile(file)
-    setImagePreview(URL.createObjectURL(file))
     setFormError('')
   }
 
@@ -120,8 +102,6 @@ export default function Workshop() {
     alert(result.message)
 
     if (!result.ok) return
-
-    revokePreview(imagePreview)
 
     setShowModal(false)
     setEditingWorkshop(null)
@@ -241,8 +221,12 @@ export default function Workshop() {
           <WorkshopModal
             editing={Boolean(editingWorkshop)}
             saving={saving}
+            imageUploadStatus={imageUploadStatus}
+            imageUploadProgress={imageUploadProgress}
+            imageUploadMessage={imageUploadMessage}
             form={form}
             setForm={updateForm}
+            imageFile={imageFile}
             imagePreview={imagePreview}
             error={formError}
             onImageChange={handleImageChange}

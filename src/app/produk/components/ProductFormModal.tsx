@@ -5,6 +5,7 @@ import { X } from 'lucide-react'
 
 import { validatePrice } from '../../../lib/product'
 import type { ProductForm, Shop } from '../../../types/product'
+import type { ImageUploadPhase } from '../../../lib/imageUpload'
 import ProductImageField from './ProductImageField'
 
 type FieldEvent = ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -15,8 +16,11 @@ type Props = {
   shops: Shop[]
   saving: boolean
   error: string
+  imageUploadStatus: ImageUploadPhase
+  imageUploadProgress: number
+  imageUploadMessage: string
   onChange: (event: FieldEvent) => void
-  onImage: (event: ChangeEvent<HTMLInputElement>) => void
+  onImage: (file: File | null) => void
   onSubmit: (event: FormEvent) => void
   onClose: () => void
 }
@@ -27,6 +31,9 @@ export default function ProductFormModal({
   shops,
   saving,
   error,
+  imageUploadStatus,
+  imageUploadProgress,
+  imageUploadMessage,
   onChange,
   onImage,
   onSubmit,
@@ -91,7 +98,14 @@ export default function ProductFormModal({
             />
           </div>
 
-          <ProductImageField preview={form.imagePreview} onChange={onImage} />
+          <ProductImageField
+            file={form.imageFile}
+            imageUrl={form.imagePreview}
+            status={imageUploadStatus}
+            progress={imageUploadProgress}
+            statusMessage={imageUploadMessage}
+            onChange={onImage}
+          />
 
           <div className="pr-field">
             <label htmlFor="description">Deskripsi</label>

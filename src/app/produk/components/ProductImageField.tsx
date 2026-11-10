@@ -1,29 +1,35 @@
-import type { ChangeEvent } from 'react'
+import ImageUploadField from '../../../components/ImageUploadField'
+import type { ImageUploadPhase } from '../../../lib/imageUpload'
 
 type Props = {
-  preview: string
-  onChange: (event: ChangeEvent<HTMLInputElement>) => void
+  file: File | null
+  imageUrl: string
+  status: ImageUploadPhase
+  progress: number
+  statusMessage: string
+  onChange: (file: File | null) => void
 }
 
-export default function ProductImageField({ preview, onChange }: Props) {
+export default function ProductImageField({
+  file,
+  imageUrl,
+  status,
+  progress,
+  statusMessage,
+  onChange,
+}: Props) {
   return (
     <div className="pr-field">
-      <label htmlFor="image">Foto Produk</label>
-
-      <input
+      <ImageUploadField
         id="image"
-        type="file"
-        accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+        label="Foto Produk"
+        file={file}
+        imageUrl={imageUrl}
+        status={status}
+        progress={progress}
+        statusMessage={statusMessage}
         onChange={onChange}
       />
-
-      <small className="pr-help">JPG/JPEG, PNG, atau WEBP. Maksimal 5 MB.</small>
-
-      {preview && (
-        <div className="pr-preview">
-          <img src={preview} alt="Preview produk" />
-        </div>
-      )}
     </div>
   )
 }

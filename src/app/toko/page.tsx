@@ -10,7 +10,6 @@ import {
   emptyForm,
   formFromShop,
   validateShopForm,
-  validateShopImage,
 } from '../../lib/shop'
 import type { Shop, ShopFormData } from '../../types/shop'
 import ShopModal from './components/ShopModal'
@@ -25,6 +24,9 @@ export default function TokoPage() {
     deletingId,
     error,
     success,
+    imageUploadStatus,
+    imageUploadProgress,
+    imageUploadMessage,
     setError,
     setSuccess,
     save,
@@ -121,24 +123,12 @@ export default function TokoPage() {
     setError('')
   }
 
-  function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    const problem = validateShopImage(file)
-
-    if (problem) {
-      setError(problem)
-      event.target.value = ''
-      return
-    }
-
+  function handleImageChange(file: File | null) {
     setError('')
 
     setForm((current) => ({
       ...current,
       imageFile: file,
-      imagePreview: URL.createObjectURL(file),
     }))
   }
 
@@ -209,6 +199,9 @@ export default function TokoPage() {
           editing={Boolean(editingShop)}
           form={form}
           saving={saving}
+          imageUploadStatus={imageUploadStatus}
+          imageUploadProgress={imageUploadProgress}
+          imageUploadMessage={imageUploadMessage}
           selectedAddress={selectedAddress}
           error={error}
           onChange={handleChange}

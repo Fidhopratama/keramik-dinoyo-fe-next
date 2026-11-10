@@ -8,7 +8,11 @@ import type { Notice } from '../types/common'
 import type { ProfileData } from '../types/profile'
 
 export default function useProfile() {
-  const [profile, setProfile] = useState<ProfileData>({ name: '', email: '', phone: '' })
+  const [profile, setProfile] = useState<ProfileData>({
+    name: '',
+    email: '',
+    phone: '',
+  })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [notice, setNotice] = useState<Notice | null>(null)
@@ -25,17 +29,25 @@ export default function useProfile() {
       try {
         const response = await getMe()
         const user = response.data?.data ?? response.data ?? {}
+        const imageUrl = [
+          user.image_url,
+          user.avatar_url,
+          user.image,
+          saved.imageUrl,
+        ].find((value) => typeof value === 'string' && value.trim()) || ''
 
         setProfile({
           name: saved.nama || user.name || 'Admin',
           email: saved.email || user.email || '',
           phone: saved.telepon || user.phone || '',
+          imageUrl,
         })
       } catch {
         setProfile({
           name: saved.nama || 'Admin',
           email: saved.email || '',
           phone: saved.telepon || '',
+          imageUrl: saved.imageUrl || '',
         })
       } finally {
         setLoading(false)
@@ -48,7 +60,7 @@ export default function useProfile() {
   const save = async (data: ProfileData) => {
     setSaving(true)
     writeSavedProfile(data)
-    setProfile(data)
+    setProfile({ ...data, imageUrl: profile.imageUrl })
 
     try {
       await api.put('/me', data)

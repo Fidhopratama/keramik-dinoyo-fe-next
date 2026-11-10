@@ -147,24 +147,23 @@ export function validateWorkshopForm(
   return ''
 }
 
-export function buildWorkshopFormData(
+export function buildWorkshopPayload(
   form: WorkshopFormData,
-  imageFile: File | null,
-): FormData {
-  const data = new FormData()
+  imageUrl?: string,
+) {
+  const data: Record<string, string> = {
+    title: form.title.trim(),
+    description: form.description.trim(),
+    instructor: form.instructor.trim(),
+    date: form.date,
+    start_time: form.start_time,
+    end_time: form.end_time,
+    capacity: String(form.capacity),
+    location: form.location.trim(),
+    status: form.status,
+  }
 
-  data.append('title', form.title.trim())
-  data.append('description', form.description.trim())
-  data.append('instructor', form.instructor.trim())
-  data.append('date', form.date)
-  data.append('start_time', form.start_time)
-  data.append('end_time', form.end_time)
-  data.append('capacity', String(form.capacity))
-  data.append('location', form.location.trim())
-  data.append('status', form.status)
-
-  if (imageFile) data.append('image', imageFile)
-
+  if (imageUrl) data.image = imageUrl
   return data
 }
 

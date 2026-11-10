@@ -6,7 +6,8 @@ const css = `
 .pf-toast.success { background: #e8f5ec; color: #237a45; }
 .pf-toast.error { background: #fdecec; color: #b42318; }
 .pf-summary { display: flex; align-items: center; gap: 16px; padding: 20px 24px; border: 1px solid #ece6df; border-radius: 16px; background: #fff; }
-.pf-avatar { display: flex; flex-shrink: 0; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 50%; background: #ecd2bf; color: #8a4d28; font-size: 26px; font-weight: 700; }
+.pf-avatar { display: flex; flex-shrink: 0; align-items: center; justify-content: center; width: 64px; height: 64px; overflow: hidden; border-radius: 50%; background: #ecd2bf; color: #8a4d28; font-size: 26px; font-weight: 700; }
+.pf-avatar img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .pf-summary h3 { margin: 0; font-size: 20px; font-weight: 700; }
 .pf-summary p { margin: 4px 0 0; color: #8b827b; font-size: 14px; }
 .pf-tag { display: inline-block; margin-top: 8px; padding: 3px 10px; border-radius: 999px; background: #fbeee4; color: #c9562e; font-size: 12px; font-weight: 600; }

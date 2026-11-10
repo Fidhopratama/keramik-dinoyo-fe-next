@@ -1,7 +1,9 @@
 'use client'
 
 import type { ChangeEvent, FormEvent } from 'react'
+import ImageUploadField from '../../../components/ImageUploadField'
 import { validateDetailedAddress } from '../../../lib/common'
+import type { ImageUploadPhase } from '../../../lib/imageUpload'
 import type { WorkshopFormData } from '../../../types/workshop'
 
 type WorkshopFormProps = {
@@ -11,10 +13,14 @@ type WorkshopFormProps = {
       | WorkshopFormData
       | ((prev: WorkshopFormData) => WorkshopFormData),
   ) => void
+  imageFile: File | null
   imagePreview: string
   error: string
   saving: boolean
-  onImageChange: (event: ChangeEvent<HTMLInputElement>) => void
+  imageUploadStatus: ImageUploadPhase
+  imageUploadProgress: number
+  imageUploadMessage: string
+  onImageChange: (file: File | null) => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
   onCancel: () => void
   editing: boolean
@@ -23,9 +29,13 @@ type WorkshopFormProps = {
 export default function WorkshopForm({
   form,
   setForm,
+  imageFile,
   imagePreview,
   error,
   saving,
+  imageUploadStatus,
+  imageUploadProgress,
+  imageUploadMessage,
   onImageChange,
   onSubmit,
   onCancel,
@@ -186,27 +196,17 @@ export default function WorkshopForm({
       </div>
 
       <div className="workshop-form-group">
-        <label>Foto Kegiatan</label>
-        <input
+        <ImageUploadField
           id="workshop-image-input"
-          className="workshop-file"
-          type="file"
-          accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
-          onChange={onImageChange}
+          label="Foto Kegiatan"
+          file={imageFile}
+          imageUrl={imagePreview}
           disabled={saving}
+          status={imageUploadStatus}
+          progress={imageUploadProgress}
+          statusMessage={imageUploadMessage}
+          onChange={onImageChange}
         />
-
-        <label htmlFor="workshop-image-input" className="workshop-upload">
-          {imagePreview ? (
-            <img src={imagePreview} alt="Preview kegiatan" />
-          ) : (
-            <>
-              <span className="workshop-upload-icon">↑</span>
-              <strong>Klik untuk memilih gambar</strong>
-              <small>JPG/JPEG, PNG, WEBP — maksimal 5 MB</small>
-            </>
-          )}
-        </label>
       </div>
 
       {error && <div className="workshop-error" role="alert">{error}</div>}

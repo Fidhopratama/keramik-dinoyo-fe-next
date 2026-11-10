@@ -9,7 +9,6 @@ import {
   formFromProduct,
   initialForm,
   validateForm,
-  validateImage,
 } from '../../lib/product'
 import type { Product, ProductForm } from '../../types/product'
 import DeleteConfirm from './components/DeleteConfirm'
@@ -27,6 +26,9 @@ export default function ProdukPage() {
     saving,
     deletingId,
     error,
+    imageUploadStatus,
+    imageUploadProgress,
+    imageUploadMessage,
     search,
     setSearch,
     fetchData,
@@ -74,22 +76,10 @@ export default function ProdukPage() {
     setFormError('')
   }
 
-  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    const problem = validateImage(file)
-
-    if (problem) {
-      setFormError(problem)
-      event.target.value = ''
-      return
-    }
-
+  const handleImageChange = (file: File | null) => {
     setForm((current) => ({
       ...current,
       imageFile: file,
-      imagePreview: URL.createObjectURL(file),
     }))
     setFormError('')
   }
@@ -149,6 +139,9 @@ export default function ProdukPage() {
             shops={shops}
             saving={saving}
             error={formError}
+            imageUploadStatus={imageUploadStatus}
+            imageUploadProgress={imageUploadProgress}
+            imageUploadMessage={imageUploadMessage}
             onChange={handleChange}
             onImage={handleImageChange}
             onSubmit={handleSubmit}

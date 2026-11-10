@@ -1,21 +1,26 @@
 'use client'
 
-import type { ChangeEvent, FormEvent } from 'react'
+import type { FormEvent } from 'react'
 import type { WorkshopFormData } from '../../../types/workshop'
+import type { ImageUploadPhase } from '../../../lib/imageUpload'
 import WorkshopForm from './WorkshopForm'
 
 type WorkshopModalProps = {
   editing: boolean
   saving: boolean
+  imageUploadStatus: ImageUploadPhase
+  imageUploadProgress: number
+  imageUploadMessage: string
   form: WorkshopFormData
   setForm: (
     value:
       | WorkshopFormData
       | ((prev: WorkshopFormData) => WorkshopFormData),
   ) => void
+  imageFile: File | null
   imagePreview: string
   error: string
-  onImageChange: (event: ChangeEvent<HTMLInputElement>) => void
+  onImageChange: (file: File | null) => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
   onClose: () => void
 }
@@ -23,8 +28,12 @@ type WorkshopModalProps = {
 export default function WorkshopModal({
   editing,
   saving,
+  imageUploadStatus,
+  imageUploadProgress,
+  imageUploadMessage,
   form,
   setForm,
+  imageFile,
   imagePreview,
   error,
   onImageChange,
@@ -65,9 +74,13 @@ export default function WorkshopModal({
         <WorkshopForm
           form={form}
           setForm={setForm}
+          imageFile={imageFile}
           imagePreview={imagePreview}
           error={error}
           saving={saving}
+          imageUploadStatus={imageUploadStatus}
+          imageUploadProgress={imageUploadProgress}
+          imageUploadMessage={imageUploadMessage}
           onImageChange={onImageChange}
           onSubmit={onSubmit}
           onCancel={onClose}
