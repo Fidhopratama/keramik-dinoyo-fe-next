@@ -3,7 +3,9 @@ import axios from 'axios'
 const api = axios.create({
   baseURL:
     process.env.NEXT_PUBLIC_API_URL ||
-    'http://127.0.0.1:5050/api',
+    (process.env.NODE_ENV === 'development'
+      ? 'http://127.0.0.1:5050/api'
+      : 'https://keramik-dinoyo-be-express-production.up.railway.app/api'),
   headers: {
     Accept: 'application/json',
   },
