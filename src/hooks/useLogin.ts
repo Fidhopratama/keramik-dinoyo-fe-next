@@ -44,8 +44,16 @@ export default function useLogin() {
       // Simpan token setelah login berhasil.
       saveToken(token)
 
-      // Langsung masuk ke dashboard.
-      router.replace('/dashboard')
+      // Kembali ke halaman tujuan jika login berasal dari link halaman tertentu.
+      const params = new URLSearchParams(window.location.search)
+      const next = params.get('next')
+
+      const destination =
+        next && next.startsWith('/') && !next.startsWith('//')
+          ? next
+          : '/dashboard'
+
+      router.replace(destination)
     } catch (err: unknown) {
       console.error('Login error:', err)
       setError(getLoginMessage(err))
