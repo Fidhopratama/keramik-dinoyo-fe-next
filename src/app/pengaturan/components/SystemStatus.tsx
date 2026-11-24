@@ -5,7 +5,11 @@ import { Server } from 'lucide-react'
 
 import { getDashboard } from '../../../services/api'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5050/api'
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (process.env.NODE_ENV === 'development'
+    ? 'http://127.0.0.1:5050/api'
+    : 'https://keramik-dinoyo-be-express-production.up.railway.app/api')
 
 export default function SystemStatus() {
   const [status, setStatus] = useState<'checking' | 'ok' | 'fail'>('checking')

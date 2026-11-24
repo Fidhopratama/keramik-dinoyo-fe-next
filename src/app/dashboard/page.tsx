@@ -19,7 +19,9 @@ import api, { getAiAnalysisResults, getShops } from '../../services/api'
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ||
-  'http://127.0.0.1:5050'
+  (process.env.NODE_ENV === 'development'
+    ? 'http://127.0.0.1:5050'
+    : 'https://keramik-dinoyo-be-express-production.up.railway.app')
 
 const localShopImages: Record<string, string> = {
   'Keramik Brawijaya': '/images/keramik-brawijaya.jpg',

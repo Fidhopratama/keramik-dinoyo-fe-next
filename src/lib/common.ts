@@ -1,6 +1,8 @@
 export const API_ORIGIN =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ||
-  'http://127.0.0.1:5050'
+  (process.env.NODE_ENV === 'development'
+    ? 'http://127.0.0.1:5050'
+    : 'https://keramik-dinoyo-be-express-production.up.railway.app')
 
 export function validateIndonesianMobileNumber(value: string): string {
   const phone = value.replace(/[\s()-]/g, '')
