@@ -7,8 +7,6 @@ import { useRouter } from 'next/navigation'
 
 import api from '../services/api'
 import {
-  DEFAULT_EMAIL,
-  DEFAULT_PASSWORD,
   getLoginMessage,
   saveToken,
 } from '../lib/login'
@@ -17,8 +15,8 @@ import type { LoginResponse } from '../types/login'
 export default function useLogin() {
   const router = useRouter()
 
-  const [email, setEmail] = useState(DEFAULT_EMAIL)
-  const [password, setPassword] = useState(DEFAULT_PASSWORD)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -46,7 +44,7 @@ export default function useLogin() {
       // Simpan token setelah login berhasil.
       saveToken(token)
 
-      // Langsung masuk ke dashboard, bukan kembali ke halaman utama.
+      // Langsung masuk ke dashboard.
       router.replace('/dashboard')
     } catch (err: unknown) {
       console.error('Login error:', err)
